@@ -4,6 +4,7 @@ import { Product } from "@/models/Product";
 import { ProductCategory } from "@/models/ProductCategory";
 import { ProductStock } from "@/models/ProductStock";
 import { inject, injectable } from "inversify";
+import { TYPES } from "@/di/types";
 
 @injectable()
 export class RegisterProductService
@@ -15,7 +16,7 @@ export class RegisterProductService
      * コンストラクタ
      */
     public constructor(
-        @inject("IProductRepository")
+        @inject(TYPES.IProductRepository)
         productRepository: IProductRepository
     ) {
         this.productRepository = productRepository;
@@ -32,39 +33,8 @@ export class RegisterProductService
      * 商品を登録する
      */
     public async registerProduct(
-        name: string,
-        price: number,
-        stock: number,
-        productCategory: ProductCategory,
-        imageUrl: string | null = null
+        product: Product
     ): Promise<Product> {
-        /*
-         * 商品名がすでに登録されていないか確認する。
-         * 重複している場合はRepository側で例外が発生する。
-         */
-        await this.productRepository.existsByName(name);
-
-        /*
-         * フロント側のProductモデルを組み立てる。
-         *
-         * 商品UUIDと在庫UUIDはバックエンド側で発行されるため、
-         * 登録リクエストへ変換する際には利用されない。
-         */
-        const productStock: ProductStock = {
-            stockUuid: crypto.randomUUID(),
-            quantity: stock,
-        };
-
-        const product: Product = {
-            productUuid: crypto.randomUUID(),
-            name,
-            price,
-            imageUrl,
-            productCategory,
-            productStock,
-            deleteFlg: 0,
-        };
-
         return await this.productRepository.register(product);
     }
 }

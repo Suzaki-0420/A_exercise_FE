@@ -14,9 +14,9 @@ const container = new Container();
 // ---------------------------------------------------------
 // バインディング（登録）設定
 // ---------------------------------------------------------
-// リポジトリの登録(モック版を紐付ける)
+// リポジトリの登録
 container.bind<IProductRepository>(TYPES.IProductRepository).to(ProductRepository);
 // サービス(ユースケース)の登録
-container.bind<IRegisterProductService>(TYPES.ISearchProductService).to(RegisterProductService);
+container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
 
 export { container };

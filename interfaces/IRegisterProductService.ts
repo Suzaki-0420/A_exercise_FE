@@ -13,11 +13,5 @@ export interface IRegisterProductService {
     /**
      * 商品を登録する
      */
-    registerProduct(
-        name: string,
-        price: number,
-        stock: number,
-        productCategory: ProductCategory,
-        imageUrl?: string | null
-    ): Promise<Product>;
+    registerProduct(product: Product): Promise<Product>;
 }
