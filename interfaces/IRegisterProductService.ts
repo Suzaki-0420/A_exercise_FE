@@ -6,6 +6,13 @@ import { ProductCategory } from "@/models/ProductCategory";
  */
 export interface IRegisterProductService {
     /**
+     * 商品名の重複確認をする
+     */
+    validateProductName(
+        name: string
+    ): Promise<void>;
+
+    /**
      * 商品カテゴリ一覧を取得する
      */
     getCategories(): Promise<ProductCategory[]>;

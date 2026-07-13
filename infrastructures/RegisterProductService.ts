@@ -28,6 +28,16 @@ export class RegisterProductService
     }
 
     /**
+    * 商品名の重複確認をする
+    */
+    public async validateProductName(
+        name: string
+    ): Promise<void> {
+        await this.productRepository
+            .existsByName(name);
+    }
+
+    /**
      * 商品カテゴリ一覧を取得する
      */
     public async getCategories(): Promise<ProductCategory[]> {

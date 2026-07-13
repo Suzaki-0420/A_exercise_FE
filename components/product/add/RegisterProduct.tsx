@@ -14,10 +14,17 @@ export const RegisterProduct = () => {
         isLoading,
         isConfirmOpen,
         isToastVisible,
+        hasValidationErrors,
+
         handleChange,
         handleStockChange,
         handleCategoryChange,
+
         handleNameBlur,
+        handlePriceBlur,
+        handleStockBlur,
+        handleCategoryBlur,
+
         openConfirmModal,
         closeConfirmModal,
         confirmRegisterProduct,
@@ -26,14 +33,14 @@ export const RegisterProduct = () => {
     } = useRegisterProduct();
 
     /**
-     * 入力画面の確認ボタン押下処理
+     * 確認ボタン押下時の処理
      */
-    const handleSubmit = (
+    const handleSubmit = async (
         event: FormEvent<HTMLFormElement>
     ) => {
         event.preventDefault();
 
-        openConfirmModal();
+        await openConfirmModal();
     };
 
     return (
@@ -44,12 +51,14 @@ export const RegisterProduct = () => {
                         新商品登録（入力）
                     </h1>
 
+                    {/* システムエラー */}
                     {errors.system && (
                         <p className="mb-4 text-center text-sm text-red-600">
                             {errors.system}
                         </p>
                     )}
 
+                    {/* 登録時の全体エラー */}
                     {errors.submit &&
                         !isConfirmOpen && (
                             <p className="mb-4 text-center text-sm text-red-600">
@@ -60,6 +69,7 @@ export const RegisterProduct = () => {
                     <form
                         onSubmit={handleSubmit}
                         className="space-y-6"
+                        noValidate
                     >
                         {/* 商品名 */}
                         <div className="grid grid-cols-[140px_1fr] items-start gap-4">
@@ -78,9 +88,11 @@ export const RegisterProduct = () => {
                                     value={formData.name}
                                     onChange={handleChange}
                                     onBlur={handleNameBlur}
-                                    maxLength={100}
                                     disabled={isLoading}
-                                    className="w-full rounded border border-gray-300 px-3 py-2"
+                                    className={`w-full rounded border px-3 py-2 ${errors.name
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        }`}
                                 />
 
                                 {errors.name && (
@@ -105,12 +117,20 @@ export const RegisterProduct = () => {
                                     id="price"
                                     name="price"
                                     type="number"
-                                    value={formData.price}
+                                    value={
+                                        Number.isNaN(
+                                            formData.price
+                                        )
+                                            ? ""
+                                            : formData.price
+                                    }
                                     onChange={handleChange}
-                                    min={0}
-                                    max={1000000}
+                                    onBlur={handlePriceBlur}
                                     disabled={isLoading}
-                                    className="w-full rounded border border-gray-300 px-3 py-2"
+                                    className={`w-full rounded border px-3 py-2 ${errors.price
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        }`}
                                 />
 
                                 {errors.price && (
@@ -136,16 +156,27 @@ export const RegisterProduct = () => {
                                     name="stock"
                                     type="number"
                                     value={
-                                        formData
-                                            .productStock
-                                            ?.quantity ?? 0
+                                        Number.isNaN(
+                                            formData
+                                                .productStock
+                                                ?.quantity
+                                        )
+                                            ? ""
+                                            : formData
+                                                .productStock
+                                                ?.quantity ??
+                                            ""
                                     }
                                     onChange={
                                         handleStockChange
                                     }
-                                    min={0}
+                                    onBlur={handleStockBlur}
                                     disabled={isLoading}
-                                    className="w-full rounded border border-gray-300 px-3 py-2"
+                                    className={`w-full rounded border px-3 py-2 ${errors.stock ||
+                                        errors.quantity
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        }`}
                                 />
 
                                 {(errors.stock ||
@@ -183,8 +214,16 @@ export const RegisterProduct = () => {
                                                 .value
                                         )
                                     }
+                                    onBlur={
+                                        handleCategoryBlur
+                                    }
                                     disabled={isLoading}
-                                    className="w-full rounded border border-gray-300 px-3 py-2"
+                                    className={`w-full rounded border px-3 py-2 ${errors.categoryUuid ||
+                                        errors.productCategory ||
+                                        errors.category
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        }`}
                                 >
                                     <option value="">
                                         選択してください
@@ -233,7 +272,7 @@ export const RegisterProduct = () => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || hasValidationErrors}
                                 className="rounded bg-green-600 px-5 py-2 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 確認
@@ -319,6 +358,7 @@ export const RegisterProduct = () => {
                             </div>
                         </dl>
 
+                        {/* 登録処理中のエラー */}
                         {errors.submit && (
                             <p className="mt-4 text-center text-sm text-red-600">
                                 {errors.submit}

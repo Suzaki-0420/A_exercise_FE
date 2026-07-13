@@ -18,7 +18,7 @@ export class ProductRepository implements IProductRepository {
         });
 
         // TODO: 実際のControllerのURLに合わせて修正する
-        const url = `/proxy-api/product/search?${params.toString()}`;
+        const url = `/proxy-api/product/keyword?${params.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",

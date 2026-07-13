@@ -14,6 +14,44 @@ import {
 } from "react";
 
 /**
+ * 商品登録フォームのエラー
+ */
+type ProductFormErrors = {
+    name?: string;
+    price?: string;
+    stock?: string;
+    quantity?: string;
+    categoryUuid?: string;
+    productCategory?: string;
+    category?: string;
+    submit?: string;
+    system?: string;
+};
+
+/**
+ * 商品登録フォームの初期値を生成する
+ */
+const createInitialFormData = (): Product => ({
+    productUuid: "",
+    name: "",
+
+    /*
+     * 空欄と0円を区別するため、初期値はNaNにする。
+     */
+    price: Number.NaN,
+
+    imageUrl: null,
+    productCategory: null,
+
+    productStock: {
+        stockUuid: "",
+        quantity: Number.NaN,
+    },
+
+    deleteFlg: 0,
+});
+
+/**
  * 商品登録画面用カスタムフック
  */
 export const useRegisterProduct = () => {
@@ -25,32 +63,17 @@ export const useRegisterProduct = () => {
         []
     );
 
-    /**
-     * フォーム初期値
-     */
-    const initialFormData: Product = {
-        productUuid: "",
-        name: "",
-        price: 0,
-        imageUrl: null,
-        productCategory: null,
-        productStock: {
-            stockUuid: "",
-            quantity: 0,
-        },
-        deleteFlg: 0,
-    };
-
     const [formData, setFormData] =
-        useState<Product>(initialFormData);
+        useState<Product>(createInitialFormData);
 
     const [categories, setCategories] =
         useState<ProductCategory[]>([]);
 
     const [errors, setErrors] =
-        useState<{ [key: string]: string }>({});
+        useState<ProductFormErrors>({});
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] =
+        useState(false);
 
     /**
      * 確認モーダルの表示状態
@@ -70,7 +93,9 @@ export const useRegisterProduct = () => {
     useEffect(() => {
         const getCategories = async () => {
             try {
-                const data = await service.getCategories();
+                const data =
+                    await service.getCategories();
+
                 setCategories(data);
             } catch (error: unknown) {
                 const message =
@@ -94,7 +119,7 @@ export const useRegisterProduct = () => {
     }, [service]);
 
     /**
-     * トーストを3秒後に自動で閉じる
+     * トーストを3秒後に閉じる
      */
     useEffect(() => {
         if (!isToastVisible) {
@@ -111,38 +136,281 @@ export const useRegisterProduct = () => {
     }, [isToastVisible]);
 
     /**
-     * フォームを初期状態へ戻す
+     * 商品名を検証する
+     *
+     * 形式チェックを通過した場合だけ、
+     * バックエンドへ重複確認を行う。
      */
-    const resetForm = useCallback(() => {
-        setFormData({
-            productUuid: "",
-            name: "",
-            price: 0,
-            imageUrl: null,
-            productCategory: null,
-            productStock: {
-                stockUuid: "",
-                quantity: 0,
-            },
-            deleteFlg: 0,
-        });
+    const validateName = useCallback(
+        async (): Promise<boolean> => {
+            const name = formData.name.trim();
 
-        setErrors({});
-        setIsConfirmOpen(false);
-    }, []);
+            // 必須チェック
+            if (!name) {
+                setErrors((prev) => ({
+                    ...prev,
+                    name: "商品名を入力してください。",
+                }));
+
+                return false;
+            }
+
+            // 文字数チェック
+            if (
+                name.length < 2 ||
+                name.length > 20
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    name:
+                        "商品名は2〜20文字で入力してください。",
+                }));
+
+                return false;
+            }
+
+            /*
+             * 日本語・全角英数字・半角英数字を許可する。
+             *
+             * \p{L}: 日本語を含む各言語の文字
+             * \p{N}: 全角・半角を含む数字
+             * ー・: 商品名で使用されやすい記号
+             * \s: 商品名内部の空白
+             */
+            const namePattern =
+                /^[\p{L}\p{N}ー・\s]+$/u;
+
+            if (!namePattern.test(name)) {
+                setErrors((prev) => ({
+                    ...prev,
+                    name:
+                        "商品名は日本語または全角・半角英数字で入力してください。",
+                }));
+
+                return false;
+            }
+
+            try {
+                /*
+                 * DBを参照する必要があるため、
+                 * 重複チェックだけバックエンドへ問い合わせる。
+                 */
+                await service.validateProductName(name);
+
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.name;
+
+                    return newErrors;
+                });
+
+                return true;
+            } catch (error: unknown) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : "商品名の重複確認に失敗しました。";
+
+                setErrors((prev) => ({
+                    ...prev,
+                    name: message,
+                }));
+
+                return false;
+            }
+        },
+        [formData.name, service]
+    );
+
+    /**
+     * 単価を検証する
+     */
+    const validatePrice =
+        useCallback((): boolean => {
+            const price = formData.price;
+
+            // 必須チェック
+            if (Number.isNaN(price)) {
+                setErrors((prev) => ({
+                    ...prev,
+                    price:
+                        "価格を入力してください。",
+                }));
+
+                return false;
+            }
+
+            // 数値形式チェック
+            if (
+                !Number.isInteger(price) ||
+                price < 0
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    price:
+                        "正しい価格形式で入力してください。",
+                }));
+
+                return false;
+            }
+
+            // 範囲チェック
+            if (price > 1_000_000) {
+                setErrors((prev) => ({
+                    ...prev,
+                    price:
+                        "価格は100万円以下で入力してください。",
+                }));
+
+                return false;
+            }
+
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors.price;
+
+                return newErrors;
+            });
+
+            return true;
+        }, [formData.price]);
+
+    /**
+     * 在庫数を検証する
+     */
+    const validateStock =
+        useCallback((): boolean => {
+            const stock =
+                formData.productStock?.quantity;
+
+            // 必須チェック
+            if (
+                stock === undefined ||
+                Number.isNaN(stock)
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    stock:
+                        "在庫数を入力してください。",
+                }));
+
+                return false;
+            }
+
+            // 数値形式チェック
+            if (
+                !Number.isInteger(stock) ||
+                stock < 0
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    stock:
+                        "正しい在庫数形式で入力してください。",
+                }));
+
+                return false;
+            }
+
+            // 範囲チェック
+            if (stock > 1000) {
+                setErrors((prev) => ({
+                    ...prev,
+                    stock:
+                        "在庫数は1000個以下で入力してください。",
+                }));
+
+                return false;
+            }
+
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+
+                delete newErrors.stock;
+                delete newErrors.quantity;
+
+                return newErrors;
+            });
+
+            return true;
+        }, [formData.productStock?.quantity]);
+
+    /**
+     * 商品カテゴリを検証する
+     */
+    const validateCategory =
+        useCallback((): boolean => {
+            if (!formData.productCategory) {
+                setErrors((prev) => ({
+                    ...prev,
+                    categoryUuid:
+                        "カテゴリを選択してください。",
+                }));
+
+                return false;
+            }
+
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+
+                delete newErrors.categoryUuid;
+                delete newErrors.productCategory;
+                delete newErrors.category;
+
+                return newErrors;
+            });
+
+            return true;
+        }, [formData.productCategory]);
+
+    /**
+     * 商品名からフォーカスが外れた場合
+     */
+    const handleNameBlur =
+        useCallback(async () => {
+            await validateName();
+        }, [validateName]);
+
+    /**
+     * 単価からフォーカスが外れた場合
+     */
+    const handlePriceBlur =
+        useCallback(() => {
+            validatePrice();
+        }, [validatePrice]);
+
+    /**
+     * 在庫数からフォーカスが外れた場合
+     */
+    const handleStockBlur =
+        useCallback(() => {
+            validateStock();
+        }, [validateStock]);
+
+    /**
+     * カテゴリからフォーカスが外れた場合
+     */
+    const handleCategoryBlur =
+        useCallback(() => {
+            validateCategory();
+        }, [validateCategory]);
 
     /**
      * 商品名・価格などの変更処理
      */
     const handleChange = useCallback(
-        (event: ChangeEvent<HTMLInputElement>) => {
+        (
+            event: ChangeEvent<HTMLInputElement>
+        ) => {
             const { name, value } = event.target;
 
             setFormData((prev) => ({
                 ...prev,
+
                 [name]:
                     name === "price"
-                        ? Number(value)
+                        ? value === ""
+                            ? Number.NaN
+                            : Number(value)
                         : name === "imageUrl"
                             ? value || null
                             : value,
@@ -151,7 +419,9 @@ export const useRegisterProduct = () => {
             setErrors((prev) => {
                 const newErrors = { ...prev };
 
-                delete newErrors[name];
+                delete newErrors[
+                    name as keyof ProductFormErrors
+                ];
                 delete newErrors.submit;
 
                 return newErrors;
@@ -164,15 +434,23 @@ export const useRegisterProduct = () => {
      * 在庫数の変更処理
      */
     const handleStockChange = useCallback(
-        (event: ChangeEvent<HTMLInputElement>) => {
-            const quantity = Number(event.target.value);
+        (
+            event: ChangeEvent<HTMLInputElement>
+        ) => {
+            const { value } = event.target;
 
             setFormData((prev) => ({
                 ...prev,
+
                 productStock: {
                     stockUuid:
-                        prev.productStock?.stockUuid ?? "",
-                    quantity,
+                        prev.productStock
+                            ?.stockUuid ?? "",
+
+                    quantity:
+                        value === ""
+                            ? Number.NaN
+                            : Number(value),
                 },
             }));
 
@@ -194,14 +472,18 @@ export const useRegisterProduct = () => {
      */
     const handleCategoryChange = useCallback(
         (categoryUuid: string) => {
-            const selectedCategory = categories.find(
-                (category) =>
-                    category.categoryUuid === categoryUuid
-            );
+            const selectedCategory =
+                categories.find(
+                    (category) =>
+                        category.categoryUuid ===
+                        categoryUuid
+                );
 
             setFormData((prev) => ({
                 ...prev,
-                productCategory: selectedCategory ?? null,
+
+                productCategory:
+                    selectedCategory ?? null,
             }));
 
             setErrors((prev) => {
@@ -219,155 +501,133 @@ export const useRegisterProduct = () => {
     );
 
     /**
-     * 商品名の重複確認
+     * フォームを初期状態へ戻す
      */
-    const handleNameBlur = useCallback(async () => {
-        if (!formData.name.trim()) {
-            return;
-        }
+    const resetForm = useCallback(() => {
+        setFormData(createInitialFormData());
+        setErrors({});
+        setIsConfirmOpen(false);
+    }, []);
 
-        try {
+    /**
+     * 全項目の検証後、確認モーダルを開く
+     */
+    const openConfirmModal =
+        useCallback(async () => {
+            const isNameValid =
+                await validateName();
+
+            const isPriceValid =
+                validatePrice();
+
+            const isStockValid =
+                validateStock();
+
+            const isCategoryValid =
+                validateCategory();
+
+            if (
+                !isNameValid ||
+                !isPriceValid ||
+                !isStockValid ||
+                !isCategoryValid
+            ) {
+                return;
+            }
+
             setErrors((prev) => {
                 const newErrors = { ...prev };
-
-                delete newErrors.name;
+                delete newErrors.submit;
 
                 return newErrors;
             });
 
-        } catch (error: unknown) {
-            const message =
-                error instanceof Error
-                    ? error.message
-                    : "商品名の確認に失敗しました。";
-
-            setErrors((prev) => ({
-                ...prev,
-                name: message,
-            }));
-        }
-    }, [formData.name, service]);
-
-    /**
-     * 確認モーダルを開く前の入力チェック
-     */
-    const openConfirmModal = useCallback(() => {
-        const validationErrors: {
-            [key: string]: string;
-        } = {};
-
-        if (!formData.name.trim()) {
-            validationErrors.name =
-                "商品名を入力してください。";
-        }
-
-        if (formData.price < 0) {
-            validationErrors.price =
-                "単価は0以上で入力してください。";
-        }
-
-        if (
-            (formData.productStock?.quantity ?? 0) < 0
-        ) {
-            validationErrors.stock =
-                "在庫数は0以上で入力してください。";
-        }
-
-        if (!formData.productCategory) {
-            validationErrors.categoryUuid =
-                "商品カテゴリを選択してください。";
-        }
-
-        if (
-            Object.keys(validationErrors).length > 0
-        ) {
-            setErrors((prev) => ({
-                ...prev,
-                ...validationErrors,
-            }));
-
-            return;
-        }
-
-        setErrors((prev) => {
-            const newErrors = { ...prev };
-
-            delete newErrors.submit;
-
-            return newErrors;
-        });
-
-        setIsConfirmOpen(true);
-    }, [formData]);
+            setIsConfirmOpen(true);
+        }, [
+            validateName,
+            validatePrice,
+            validateStock,
+            validateCategory,
+        ]);
 
     /**
      * 確認モーダルを閉じる
      */
-    const closeConfirmModal = useCallback(() => {
-        if (isLoading) {
-            return;
-        }
+    const closeConfirmModal =
+        useCallback(() => {
+            if (isLoading) {
+                return;
+            }
 
-        setIsConfirmOpen(false);
-    }, [isLoading]);
+            setIsConfirmOpen(false);
+        }, [isLoading]);
 
     /**
      * 商品登録処理
      */
     const handleRegisterProduct =
-        useCallback(async (): Promise<Product | null> => {
-            setIsLoading(true);
-
-            try {
-                const result =
-                    await service.registerProduct(formData);
-
-                return result;
-            } catch (error: unknown) {
-                const message =
-                    error instanceof Error
-                        ? error.message
-                        : "商品の登録に失敗しました。";
+        useCallback(
+            async (): Promise<Product | null> => {
+                setIsLoading(true);
 
                 try {
-                    const parsed = JSON.parse(message);
+                    return await service.registerProduct(
+                        formData
+                    );
+                } catch (error: unknown) {
+                    const message =
+                        error instanceof Error
+                            ? error.message
+                            : "商品の登録に失敗しました。";
 
-                    if (parsed.type === "validation") {
-                        const convertedErrors: {
-                            [key: string]: string;
-                        } = {};
+                    try {
+                        const parsed =
+                            JSON.parse(message);
 
-                        Object.entries(
-                            parsed.errors
-                        ).forEach(([key, value]) => {
-                            const normalizedKey =
-                                key
-                                    .charAt(0)
-                                    .toLowerCase() +
-                                key.slice(1);
+                        if (
+                            parsed.type ===
+                            "validation"
+                        ) {
+                            const convertedErrors:
+                                ProductFormErrors = {};
 
-                            convertedErrors[
-                                normalizedKey
-                            ] = String(value);
-                        });
+                            Object.entries(
+                                parsed.errors
+                            ).forEach(
+                                ([key, value]) => {
+                                    const normalizedKey =
+                                        key
+                                            .charAt(0)
+                                            .toLowerCase() +
+                                        key.slice(1);
 
-                        setErrors(convertedErrors);
-                    } else {
+                                    convertedErrors[
+                                        normalizedKey as keyof ProductFormErrors
+                                    ] = String(value);
+                                }
+                            );
+
+                            setErrors(
+                                convertedErrors
+                            );
+                        } else {
+                            setErrors({
+                                submit: message,
+                            });
+                        }
+                    } catch {
                         setErrors({
                             submit: message,
                         });
                     }
-                } catch {
-                    setErrors({
-                        submit: message,
-                    });
-                }
 
-                return null;
-            } finally {
-                setIsLoading(false);
-            }
-        }, [formData, service]);
+                    return null;
+                } finally {
+                    setIsLoading(false);
+                }
+            },
+            [formData, service]
+        );
 
     /**
      * 確認モーダルから商品を登録する
@@ -378,29 +638,12 @@ export const useRegisterProduct = () => {
                 await handleRegisterProduct();
 
             if (!result) {
-                /*
-                 * 登録失敗時はモーダルを残し、
-                 * エラーメッセージを表示する。
-                 */
                 return;
             }
 
             setIsConfirmOpen(false);
             setIsToastVisible(true);
-
-            setFormData({
-                productUuid: "",
-                name: "",
-                price: 0,
-                imageUrl: null,
-                productCategory: null,
-                productStock: {
-                    stockUuid: "",
-                    quantity: 0,
-                },
-                deleteFlg: 0,
-            });
-
+            setFormData(createInitialFormData());
             setErrors({});
         }, [handleRegisterProduct]);
 
@@ -411,6 +654,20 @@ export const useRegisterProduct = () => {
         setIsToastVisible(false);
     }, []);
 
+    /**
+ * 入力項目にバリデーションエラーがあるか
+ */
+    const hasValidationErrors = Boolean(
+        errors.name ||
+        errors.price ||
+        errors.stock ||
+        errors.quantity ||
+        errors.categoryUuid ||
+        errors.productCategory ||
+        errors.category ||
+        errors.system
+    );
+
     return {
         formData,
         categories,
@@ -418,10 +675,17 @@ export const useRegisterProduct = () => {
         isLoading,
         isConfirmOpen,
         isToastVisible,
+        hasValidationErrors,
+
         handleChange,
         handleStockChange,
         handleCategoryChange,
+
         handleNameBlur,
+        handlePriceBlur,
+        handleStockBlur,
+        handleCategoryBlur,
+
         openConfirmModal,
         closeConfirmModal,
         confirmRegisterProduct,
