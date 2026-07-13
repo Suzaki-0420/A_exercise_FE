@@ -1,4 +1,5 @@
 import type { IProductRepository } from "@/interfaces/IProductRepository";
+import type { IProductCategoryRepository } from "@/interfaces/IProductCategoryRepository";
 import { IRegisterProductService } from "@/interfaces/IRegisterProductService";
 import { Product } from "@/models/Product";
 import { ProductCategory } from "@/models/ProductCategory";
@@ -11,22 +12,26 @@ export class RegisterProductService
     implements IRegisterProductService {
 
     private readonly productRepository: IProductRepository;
+    private readonly productCategoryRepository: IProductCategoryRepository;
 
     /**
      * コンストラクタ
      */
     public constructor(
         @inject(TYPES.IProductRepository)
-        productRepository: IProductRepository
+        productRepository: IProductRepository,
+        @inject(TYPES.IProductCategoryRepository)
+        productCategoryRepository: IProductCategoryRepository
     ) {
         this.productRepository = productRepository;
+        this.productCategoryRepository = productCategoryRepository;
     }
 
     /**
      * 商品カテゴリ一覧を取得する
      */
     public async getCategories(): Promise<ProductCategory[]> {
-        return await this.productRepository.getCategories();
+        return await this.productCategoryRepository.findAll();
     }
 
     /**

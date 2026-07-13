@@ -4,6 +4,7 @@
 export const TYPES = {
     // インフラストラクチャ層
     IProductRepository: Symbol.for("IProductRepository"),
+    IProductCategoryRepository: Symbol.for("IProductCategoryRepository"),
     // サービス(ユースケース)層
     IRegisterProductService: Symbol.for("IRegisterProductService"),
 };

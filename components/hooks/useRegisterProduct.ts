@@ -25,7 +25,10 @@ export const useRegisterProduct = () => {
         []
     );
 
-    const [formData, setFormData] = useState<Product>({
+    /**
+     * フォーム初期値
+     */
+    const initialFormData: Product = {
         productUuid: "",
         name: "",
         price: 0,
@@ -36,7 +39,10 @@ export const useRegisterProduct = () => {
             quantity: 0,
         },
         deleteFlg: 0,
-    });
+    };
+
+    const [formData, setFormData] =
+        useState<Product>(initialFormData);
 
     const [categories, setCategories] =
         useState<ProductCategory[]>([]);
@@ -45,10 +51,67 @@ export const useRegisterProduct = () => {
         useState<{ [key: string]: string }>({});
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
 
     /**
-     * フォームを初期状態に戻す
+     * 確認モーダルの表示状態
+     */
+    const [isConfirmOpen, setIsConfirmOpen] =
+        useState(false);
+
+    /**
+     * 登録完了トーストの表示状態
+     */
+    const [isToastVisible, setIsToastVisible] =
+        useState(false);
+
+    /**
+     * 商品カテゴリ一覧を取得する
+     */
+    useEffect(() => {
+        const getCategories = async () => {
+            try {
+                const data = await service.getCategories();
+                setCategories(data);
+            } catch (error: unknown) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : "商品カテゴリ一覧の取得に失敗しました。";
+
+                console.error(
+                    "商品カテゴリ一覧取得エラー:",
+                    error
+                );
+
+                setErrors((prev) => ({
+                    ...prev,
+                    system: message,
+                }));
+            }
+        };
+
+        getCategories();
+    }, [service]);
+
+    /**
+     * トーストを3秒後に自動で閉じる
+     */
+    useEffect(() => {
+        if (!isToastVisible) {
+            return;
+        }
+
+        const timerId = window.setTimeout(() => {
+            setIsToastVisible(false);
+        }, 3000);
+
+        return () => {
+            window.clearTimeout(timerId);
+        };
+    }, [isToastVisible]);
+
+    /**
+     * フォームを初期状態へ戻す
      */
     const resetForm = useCallback(() => {
         setFormData({
@@ -65,30 +128,11 @@ export const useRegisterProduct = () => {
         });
 
         setErrors({});
-        setIsSuccess(false);
+        setIsConfirmOpen(false);
     }, []);
 
     /**
-     * 商品カテゴリ一覧を取得する
-     */
-    useEffect(() => {
-        const getCategories = async () => {
-            try {
-                const data = await service.getCategories();
-                setCategories(data);
-            } catch {
-                setErrors((prev) => ({
-                    ...prev,
-                    system: "商品カテゴリ一覧の取得に失敗しました。",
-                }));
-            }
-        };
-
-        getCategories();
-    }, [service]);
-
-    /**
-     * 商品名・価格・画像URLの変更処理
+     * 商品名・価格などの変更処理
      */
     const handleChange = useCallback(
         (event: ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +209,7 @@ export const useRegisterProduct = () => {
 
                 delete newErrors.categoryUuid;
                 delete newErrors.productCategory;
+                delete newErrors.category;
                 delete newErrors.submit;
 
                 return newErrors;
@@ -184,7 +229,9 @@ export const useRegisterProduct = () => {
         try {
             setErrors((prev) => {
                 const newErrors = { ...prev };
+
                 delete newErrors.name;
+
                 return newErrors;
             });
 
@@ -202,18 +249,78 @@ export const useRegisterProduct = () => {
     }, [formData.name, service]);
 
     /**
+     * 確認モーダルを開く前の入力チェック
+     */
+    const openConfirmModal = useCallback(() => {
+        const validationErrors: {
+            [key: string]: string;
+        } = {};
+
+        if (!formData.name.trim()) {
+            validationErrors.name =
+                "商品名を入力してください。";
+        }
+
+        if (formData.price < 0) {
+            validationErrors.price =
+                "単価は0以上で入力してください。";
+        }
+
+        if (
+            (formData.productStock?.quantity ?? 0) < 0
+        ) {
+            validationErrors.stock =
+                "在庫数は0以上で入力してください。";
+        }
+
+        if (!formData.productCategory) {
+            validationErrors.categoryUuid =
+                "商品カテゴリを選択してください。";
+        }
+
+        if (
+            Object.keys(validationErrors).length > 0
+        ) {
+            setErrors((prev) => ({
+                ...prev,
+                ...validationErrors,
+            }));
+
+            return;
+        }
+
+        setErrors((prev) => {
+            const newErrors = { ...prev };
+
+            delete newErrors.submit;
+
+            return newErrors;
+        });
+
+        setIsConfirmOpen(true);
+    }, [formData]);
+
+    /**
+     * 確認モーダルを閉じる
+     */
+    const closeConfirmModal = useCallback(() => {
+        if (isLoading) {
+            return;
+        }
+
+        setIsConfirmOpen(false);
+    }, [isLoading]);
+
+    /**
      * 商品登録処理
      */
     const handleRegisterProduct =
         useCallback(async (): Promise<Product | null> => {
             setIsLoading(true);
-            setIsSuccess(false);
 
             try {
                 const result =
                     await service.registerProduct(formData);
-
-                setIsSuccess(true);
 
                 return result;
             } catch (error: unknown) {
@@ -230,16 +337,19 @@ export const useRegisterProduct = () => {
                             [key: string]: string;
                         } = {};
 
-                        Object.entries(parsed.errors).forEach(
-                            ([key, value]) => {
-                                const normalizedKey =
-                                    key.charAt(0).toLowerCase() +
-                                    key.slice(1);
+                        Object.entries(
+                            parsed.errors
+                        ).forEach(([key, value]) => {
+                            const normalizedKey =
+                                key
+                                    .charAt(0)
+                                    .toLowerCase() +
+                                key.slice(1);
 
-                                convertedErrors[normalizedKey] =
-                                    String(value);
-                            }
-                        );
+                            convertedErrors[
+                                normalizedKey
+                            ] = String(value);
+                        });
 
                         setErrors(convertedErrors);
                     } else {
@@ -259,17 +369,63 @@ export const useRegisterProduct = () => {
             }
         }, [formData, service]);
 
+    /**
+     * 確認モーダルから商品を登録する
+     */
+    const confirmRegisterProduct =
+        useCallback(async () => {
+            const result =
+                await handleRegisterProduct();
+
+            if (!result) {
+                /*
+                 * 登録失敗時はモーダルを残し、
+                 * エラーメッセージを表示する。
+                 */
+                return;
+            }
+
+            setIsConfirmOpen(false);
+            setIsToastVisible(true);
+
+            setFormData({
+                productUuid: "",
+                name: "",
+                price: 0,
+                imageUrl: null,
+                productCategory: null,
+                productStock: {
+                    stockUuid: "",
+                    quantity: 0,
+                },
+                deleteFlg: 0,
+            });
+
+            setErrors({});
+        }, [handleRegisterProduct]);
+
+    /**
+     * トーストを閉じる
+     */
+    const closeToast = useCallback(() => {
+        setIsToastVisible(false);
+    }, []);
+
     return {
         formData,
         categories,
         errors,
         isLoading,
-        isSuccess,
+        isConfirmOpen,
+        isToastVisible,
         handleChange,
         handleStockChange,
         handleCategoryChange,
         handleNameBlur,
-        handleRegisterProduct,
+        openConfirmModal,
+        closeConfirmModal,
+        confirmRegisterProduct,
+        closeToast,
         resetForm,
     };
 };

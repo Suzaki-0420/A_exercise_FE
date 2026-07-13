@@ -26,10 +26,6 @@ export interface IProductRepository {
      */
     existsByName(name: string): Promise<void>;
 
-    /**
-     * 商品カテゴリをすべて取得する
-     */
-    getCategories(): Promise<ProductCategory[]>;
 
     /**
      * 商品を登録する

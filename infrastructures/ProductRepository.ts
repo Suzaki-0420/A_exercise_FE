@@ -18,7 +18,7 @@ export class ProductRepository implements IProductRepository {
         });
 
         // TODO: 実際のControllerのURLに合わせて修正する
-        const url = `/proxy-api/admin/product/search?${params.toString()}`;
+        const url = `/proxy-api/product/search?${params.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -59,7 +59,7 @@ export class ProductRepository implements IProductRepository {
 
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/admin/product/category?${params.toString()}`;
+            `/proxy-api/product/category?${params.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -95,7 +95,7 @@ export class ProductRepository implements IProductRepository {
         });
 
         const url =
-            `/proxy-api/admin/product/validate?${params.toString()}`;
+            `/proxy-api/product/validate?${params.toString()}`;
 
         console.log("商品名：", name);
 
@@ -133,53 +133,12 @@ export class ProductRepository implements IProductRepository {
         }
     }
 
-    /**
-     * 商品カテゴリをすべて取得する
-     */
-    public async getCategories(): Promise<ProductCategory[]> {
-        const url = "/proxy-api/admin/product/categories";
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-
-            console.log("========== API ERROR ==========");
-            console.log("categories url:", url);
-            console.log("categories status:", response.status);
-            console.log("categories error body:", errorData);
-            console.log("===============================");
-
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            if (errorData.errors) {
-                const messages = Object.values(errorData.errors)
-                    .flat()
-                    .join("\n");
-
-                throw new Error(messages);
-            }
-
-            throw new Error(
-                `商品カテゴリの取得に失敗しました (Status: ${response.status})`
-            );
-        }
-
-        return await response.json();
-    }
 
     /**
      * 商品を登録する
      */
     public async register(product: Product): Promise<Product> {
-        const url = "/proxy-api/admin/product/register";
+        const url = "/proxy-api/product/register";
 
         /*
          * バックエンドのRegisterViewModelに合わせて、

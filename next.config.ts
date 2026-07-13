@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
          * ※画面（/api/users/register）とのURL衝突を避けるため、
          *   API専用の入り口として「/proxy-api/」を冠しています。
          */
-        source: '/proxy-api/users/:path*',
+        source: '/proxy-api/account/:path*',
         destination: 'http://127.0.0.1/admin/account/:path*',
       },
       {
@@ -21,8 +21,8 @@ const nextConfig: NextConfig = {
          * source: フロントエンド側で呼び出すURL
          * destination: 商品管理APIエンドポイント
          */
-        source: '/proxy-api/products/:path*',
-        destination: 'http://127.0.0.1/admin/product/:path*',
+        source: '/proxy-api/product/:path*',
+        destination: 'http://127.0.0.1:5126/admin/product/:path*',
       },
       {
         /**
@@ -30,8 +30,8 @@ const nextConfig: NextConfig = {
          * source: フロントエンド側で呼び出すURL
          * destination: 商品管理APIエンドポイント
          */
-        source: '/proxy-api/products/:path*',
-        destination: 'http://127.0.0.1/admin/category/:path*',
+        source: '/proxy-api/category/:path*',
+        destination: 'http://127.0.0.1:5126/admin/category/:path*',
       },
       {
         /**
@@ -39,8 +39,8 @@ const nextConfig: NextConfig = {
          * source: フロントエンド側で呼び出すURL
          * destination: 商品管理APIエンドポイント
          */
-        source: '/proxy-api/products/:path*',
-        destination: 'http://127.0.0.1/admin/order/:path*',
+        source: '/proxy-api/order/:path*',
+        destination: 'http://127.0.0.1:5126/admin/order/:path*',
       },
     ]
   }
