@@ -5,7 +5,7 @@ import { ProductRepository } from "@/infrastructures/ProductRepository";
 import { IEmployeeAccountRepository } from "@/interfaces/IEmployeeAccountRepository";
 import { EmployeeAccountRepository } from "@/infrastructures/EmployeeAccountRepository";
 import { IRegisterProductService } from "@/interfaces/IRegisterProductService";
-import { RegisterProductService } from "@/infrastructures/RegisterProductService";
+import { RegisterProductService } from "@/services/RegisterProductService";
 import { Container } from "inversify";
 import { TYPES } from "./types";
 
