@@ -10,6 +10,8 @@ import { AdminAuthRepository } from "@/infrastructures/AdminAuthRepository";
 import { LoginAdminService } from "@/services/LoginAdminService";
 import type { IAdminAuthRepository } from "@/interfaces/IAdminAuthRepository";
 import type { ILoginAdminService } from "@/interfaces/ILoginAdminService";
+import type { ILogoutAdminService } from "@/interfaces/ILogoutAdminService";
+import { LogoutAdminService } from "@/services/LogoutAdminService";
 import { Container } from "inversify";
 import { TYPES } from "./types";
 
@@ -30,5 +32,6 @@ container.bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository).to(AdminAuthRep
 // サービス(ユースケース)の登録
 container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
 container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
+container.bind<ILogoutAdminService>(TYPES.ILogoutAdminService).to(LogoutAdminService);
 
 export { container };
