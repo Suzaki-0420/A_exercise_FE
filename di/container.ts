@@ -6,6 +6,10 @@ import { IEmployeeAccountRepository } from "@/interfaces/IEmployeeAccountReposit
 import { EmployeeAccountRepository } from "@/infrastructures/EmployeeAccountRepository";
 import { IRegisterProductService } from "@/interfaces/IRegisterProductService";
 import { RegisterProductService } from "@/services/RegisterProductService";
+import { AdminAuthRepository } from "@/infrastructures/AdminAuthRepository";
+import { LoginAdminService } from "@/services/LoginAdminService";
+import type { IAdminAuthRepository } from "@/interfaces/IAdminAuthRepository";
+import type { ILoginAdminService } from "@/interfaces/ILoginAdminService";
 import { Container } from "inversify";
 import { TYPES } from "./types";
 
@@ -22,7 +26,9 @@ const container = new Container();
 container.bind<IProductRepository>(TYPES.IProductRepository).to(ProductRepository);
 container.bind<IProductCategoryRepository>(TYPES.IProductCategoryRepository).to(ProductCategoryRepository);
 container.bind<IEmployeeAccountRepository>(TYPES.IEmployeeAccountRepository).to(EmployeeAccountRepository);
+container.bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository).to(AdminAuthRepository);
 // サービス(ユースケース)の登録
 container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
+container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
 
 export { container };
