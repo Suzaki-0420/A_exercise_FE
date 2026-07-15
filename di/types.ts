@@ -10,4 +10,5 @@ export const TYPES = {
     // サービス(ユースケース)層
     IRegisterProductService: Symbol.for("IRegisterProductService"),
     ILoginAdminService: Symbol.for("ILoginAdminService"),
+    ILogoutAdminService: Symbol.for("ILogoutAdminService"),
 };
