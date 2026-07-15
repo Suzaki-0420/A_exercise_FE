@@ -6,6 +6,8 @@ export const TYPES = {
     IProductRepository: Symbol.for("IProductRepository"),
     IProductCategoryRepository: Symbol.for("IProductCategoryRepository"),
     IEmployeeAccountRepository: Symbol.for("IEmployeeAccountRepository"),
+    IAdminAuthRepository: Symbol.for("IAdminAuthRepository"),
     // サービス(ユースケース)層
     IRegisterProductService: Symbol.for("IRegisterProductService"),
+    ILoginAdminService: Symbol.for("ILoginAdminService"),
 };
