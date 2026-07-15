@@ -24,6 +24,7 @@ type ProductFormErrors = {
     categoryUuid?: string;
     productCategory?: string;
     category?: string;
+    image?: string;
     submit?: string;
     system?: string;
 };
@@ -40,7 +41,12 @@ const createInitialFormData = (): Product => ({
      */
     price: Number.NaN,
 
+    /*
+     * imageUrlは画像登録後にバックエンドから返されるURL。
+     * 選択中の画像ファイルはimageFileで別管理する。
+     */
     imageUrl: null,
+
     productCategory: null,
 
     productStock: {
@@ -74,6 +80,24 @@ export const useRegisterProduct = () => {
 
     const [isLoading, setIsLoading] =
         useState(false);
+
+    /**
+     * 選択された画像ファイル
+     */
+    const [imageFile, setImageFile] =
+        useState<File | null>(null);
+
+    /**
+     * 選択された画像のプレビューURL
+     */
+    const [imagePreviewUrl, setImagePreviewUrl] =
+        useState<string | null>(null);
+
+    /**
+     * ファイル入力欄を初期化するためのkey
+     */
+    const [imageInputKey, setImageInputKey] =
+        useState(0);
 
     /**
      * 確認モーダルの表示状態
@@ -134,6 +158,19 @@ export const useRegisterProduct = () => {
             window.clearTimeout(timerId);
         };
     }, [isToastVisible]);
+
+    /**
+     * 画像プレビューURLを解放する
+     */
+    useEffect(() => {
+        return () => {
+            if (imagePreviewUrl) {
+                URL.revokeObjectURL(
+                    imagePreviewUrl
+                );
+            }
+        };
+    }, [imagePreviewUrl]);
 
     /**
      * 商品名を検証する
@@ -363,6 +400,70 @@ export const useRegisterProduct = () => {
         }, [formData.productCategory]);
 
     /**
+     * 商品画像を検証する
+     */
+    const validateImage =
+        useCallback((): boolean => {
+            // 画像必須チェック
+            if (!imageFile) {
+                setErrors((prev) => ({
+                    ...prev,
+                    image:
+                        "商品画像を選択してください。",
+                }));
+
+                return false;
+            }
+
+            /*
+             * 許可する画像形式
+             */
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+            ];
+
+            if (
+                !allowedTypes.includes(
+                    imageFile.type
+                )
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    image:
+                        "商品画像はJPEGまたはPNG形式を選択してください。",
+                }));
+
+                return false;
+            }
+
+            /*
+             * ファイルサイズ上限：5MB
+             */
+            const maxFileSize =
+                5 * 1024 * 1024;
+
+            if (imageFile.size > maxFileSize) {
+                setErrors((prev) => ({
+                    ...prev,
+                    image:
+                        "商品画像は5MB以下を選択してください。",
+                }));
+
+                return false;
+            }
+
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors.image;
+
+                return newErrors;
+            });
+
+            return true;
+        }, [imageFile]);
+
+    /**
      * 商品名からフォーカスが外れた場合
      */
     const handleNameBlur =
@@ -411,9 +512,7 @@ export const useRegisterProduct = () => {
                         ? value === ""
                             ? Number.NaN
                             : Number(value)
-                        : name === "imageUrl"
-                            ? value || null
-                            : value,
+                        : value,
             }));
 
             setErrors((prev) => {
@@ -501,10 +600,70 @@ export const useRegisterProduct = () => {
     );
 
     /**
+     * 商品画像の変更処理
+     */
+    const handleImageChange = useCallback(
+        (
+            event: ChangeEvent<HTMLInputElement>
+        ) => {
+            const file =
+                event.target.files?.[0] ?? null;
+
+            if (!file) {
+                setImageFile(null);
+                setImagePreviewUrl(null);
+
+                return;
+            }
+
+            /*
+             * 選択したFileを登録用に保持する。
+             */
+            setImageFile(file);
+
+            /*
+             * ブラウザ上でプレビュー表示するための
+             * 一時URLを生成する。
+             */
+            const previewUrl =
+                URL.createObjectURL(file);
+
+            setImagePreviewUrl(previewUrl);
+
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+
+                delete newErrors.image;
+                delete newErrors.submit;
+
+                return newErrors;
+            });
+        },
+        []
+    );
+
+    /**
+     * 商品画像からフォーカスが外れた場合
+     */
+    const handleImageBlur =
+        useCallback(() => {
+            validateImage();
+        }, [validateImage]);
+
+    /**
      * フォームを初期状態へ戻す
      */
     const resetForm = useCallback(() => {
         setFormData(createInitialFormData());
+
+        setImageFile(null);
+        setImagePreviewUrl(null);
+
+        /*
+         * input type="file"の表示も初期化する。
+         */
+        setImageInputKey((prev) => prev + 1);
+
         setErrors({});
         setIsConfirmOpen(false);
     }, []);
@@ -526,11 +685,15 @@ export const useRegisterProduct = () => {
             const isCategoryValid =
                 validateCategory();
 
+            const isImageValid =
+                validateImage();
+
             if (
                 !isNameValid ||
                 !isPriceValid ||
                 !isStockValid ||
-                !isCategoryValid
+                !isCategoryValid ||
+                !isImageValid
             ) {
                 return;
             }
@@ -548,6 +711,7 @@ export const useRegisterProduct = () => {
             validatePrice,
             validateStock,
             validateCategory,
+            validateImage,
         ]);
 
     /**
@@ -568,11 +732,25 @@ export const useRegisterProduct = () => {
     const handleRegisterProduct =
         useCallback(
             async (): Promise<Product | null> => {
+                if (!imageFile) {
+                    setErrors((prev) => ({
+                        ...prev,
+                        image:
+                            "商品画像を選択してください。",
+                    }));
+
+                    return null;
+                }
+
                 setIsLoading(true);
 
                 try {
+                    /*
+                     * Productと画像ファイルをServiceへ渡す。
+                     */
                     return await service.registerProduct(
-                        formData
+                        formData,
+                        imageFile
                     );
                 } catch (error: unknown) {
                     const message =
@@ -601,6 +779,11 @@ export const useRegisterProduct = () => {
                                             .toLowerCase() +
                                         key.slice(1);
 
+                                    /*
+                                     * バックエンド側の
+                                     * Imageプロパティのエラーも
+                                     * imageとして格納される。
+                                     */
                                     convertedErrors[
                                         normalizedKey as keyof ProductFormErrors
                                     ] = String(value);
@@ -626,7 +809,11 @@ export const useRegisterProduct = () => {
                     setIsLoading(false);
                 }
             },
-            [formData, service]
+            [
+                formData,
+                imageFile,
+                service,
+            ]
         );
 
     /**
@@ -643,7 +830,16 @@ export const useRegisterProduct = () => {
 
             setIsConfirmOpen(false);
             setIsToastVisible(true);
+
             setFormData(createInitialFormData());
+            setImageFile(null);
+            setImagePreviewUrl(null);
+
+            /*
+             * ファイル入力欄を初期化する。
+             */
+            setImageInputKey((prev) => prev + 1);
+
             setErrors({});
         }, [handleRegisterProduct]);
 
@@ -655,8 +851,8 @@ export const useRegisterProduct = () => {
     }, []);
 
     /**
- * 入力項目にバリデーションエラーがあるか
- */
+     * 入力項目にバリデーションエラーがあるか
+     */
     const hasValidationErrors = Boolean(
         errors.name ||
         errors.price ||
@@ -665,6 +861,7 @@ export const useRegisterProduct = () => {
         errors.categoryUuid ||
         errors.productCategory ||
         errors.category ||
+        errors.image ||
         errors.system
     );
 
@@ -677,14 +874,20 @@ export const useRegisterProduct = () => {
         isToastVisible,
         hasValidationErrors,
 
+        imageFile,
+        imagePreviewUrl,
+        imageInputKey,
+
         handleChange,
         handleStockChange,
         handleCategoryChange,
+        handleImageChange,
 
         handleNameBlur,
         handlePriceBlur,
         handleStockBlur,
         handleCategoryBlur,
+        handleImageBlur,
 
         openConfirmModal,
         closeConfirmModal,

@@ -6,6 +6,46 @@ import { injectable } from "inversify";
 @injectable()
 export class ProductRepository implements IProductRepository {
     /**
+     * すべての商品を取得する
+     */
+    public async findAll(): Promise<Product[]> {
+        const url = "/proxy-api/product/category";
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
+
+        return await response.json();
+    }
+
+    /**
+     * 商品UUIDを指定して商品を取得する
+     */
+    public async findById(
+        productUuid: string
+    ): Promise<Product | null> {
+        const url =
+            `/proxy-api/product/edit/${encodeURIComponent(productUuid)}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
+
+        if (response.status === 404) {
+            return null;
+        }
+
+        return await response.json();
+    }
+    /**
      * 指定されたキーワードを商品名に含む商品を取得する
      */
     public async searchKeyword(
@@ -135,70 +175,125 @@ export class ProductRepository implements IProductRepository {
 
 
     /**
-     * 商品を登録する
-     */
-    public async register(product: Product): Promise<Product> {
+ * 商品を登録する
+ */
+    public async register(
+        product: Product,
+        imageFile: File
+    ): Promise<Product> {
         const url = "/proxy-api/product/register";
 
         /*
-         * バックエンドのRegisterViewModelに合わせて、
-         * Productから登録用JSONへ変換する。
+         * 画像ファイルを送信するため、
+         * JSONではなくFormDataを使用する。
          */
-        const requestBody = {
-            name: product.name,
-            price: product.price,
-            stock: product.productStock?.quantity ?? 0,
-            categoryUuid:
-                product.productCategory?.categoryUuid ?? null,
-            categoryName:
-                product.productCategory?.name ?? "",
-        };
+        const requestFormData = new FormData();
+
+        /*
+         * バックエンドのRegisterViewModelのプロパティ名に合わせる。
+         */
+        requestFormData.append(
+            "name",
+            product.name
+        );
+
+        requestFormData.append(
+            "price",
+            String(product.price)
+        );
+
+        requestFormData.append(
+            "stock",
+            String(
+                product.productStock?.quantity ?? 0
+            )
+        );
+
+        requestFormData.append(
+            "categoryUuid",
+            product.productCategory
+                ?.categoryUuid ?? ""
+        );
+
+        requestFormData.append(
+            "categoryName",
+            product.productCategory?.name ?? ""
+        );
+
+        /*
+         * 画像が選択されている場合だけ追加する。
+         *
+         * バックエンド側のIFormFileプロパティ名が
+         * Imageなら、ここも"image"にする。
+         */
+        if (imageFile) {
+            requestFormData.append(
+                "image",
+                imageFile
+            );
+        }
 
         const response = await fetch(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
+
+            /*
+             * Content-Typeは自分で指定しない。
+             *
+             * FormDataをbodyに渡すと、
+             * ブラウザがboundary付きの
+             * multipart/form-dataを自動設定する。
+             */
+            body: requestFormData,
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = await response
+                .json()
+                .catch(() => ({}));
 
-            console.log("========== REGISTER PRODUCT ==========");
+            console.log(
+                "========== REGISTER PRODUCT =========="
+            );
             console.log("register url:", url);
-            console.log("request body:", requestBody);
+
+            /*
+             * FormDataはそのままでは中身を確認しにくいため、
+             * Entriesを配列にしてログへ出す。
+             */
+            console.log(
+                "request form data:",
+                Array.from(requestFormData.entries())
+            );
+
             console.log("status:", response.status);
             console.log("error body:", errorData);
-            console.log("======================================");
+            console.log(
+                "======================================"
+            );
 
             /*
-             * 今回のControllerは基本的に、
-             * { code, message } の形式でエラーを返す。
-             */
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            /*
-             * ASP.NET Core標準のValidationProblemDetailsが
-             * 返された場合にも対応する。
+             * ASP.NET Core標準の
+             * ValidationProblemDetails形式に対応する。
+             *
+             * { errors: { Name: ["..."] } }
              */
             if (errorData.errors) {
-                const fieldErrors: { [key: string]: string } = {};
+                const fieldErrors: {
+                    [key: string]: string;
+                } = {};
 
-                Object.entries(errorData.errors).forEach(
-                    ([key, value]) => {
-                        const normalizedKey =
-                            key.charAt(0).toLowerCase() +
-                            key.slice(1);
+                Object.entries(
+                    errorData.errors
+                ).forEach(([key, value]) => {
+                    const normalizedKey =
+                        key.charAt(0).toLowerCase() +
+                        key.slice(1);
 
-                        fieldErrors[normalizedKey] =
-                            Array.isArray(value)
-                                ? String(value[0])
-                                : String(value);
-                    }
-                );
+                    fieldErrors[normalizedKey] =
+                        Array.isArray(value)
+                            ? String(value[0])
+                            : String(value);
+                });
 
                 throw new Error(
                     JSON.stringify({
@@ -208,8 +303,19 @@ export class ProductRepository implements IProductRepository {
                 );
             }
 
+            /*
+             * 今回のControllerが返す
+             * { code, message } 形式に対応する。
+             */
+            if (errorData.message) {
+                throw new Error(
+                    errorData.message
+                );
+            }
+
             throw new Error(
-                `商品の登録に失敗しました (Status: ${response.status})`
+                `商品の登録に失敗しました ` +
+                `(Status: ${response.status})`
             );
         }
 

@@ -16,9 +16,13 @@ export const RegisterProduct = () => {
         isToastVisible,
         hasValidationErrors,
 
+        imageFile,
+        imagePreviewUrl,
+
         handleChange,
         handleStockChange,
         handleCategoryChange,
+        handleImageChange,
 
         handleNameBlur,
         handlePriceBlur,
@@ -51,14 +55,12 @@ export const RegisterProduct = () => {
                         新商品登録（入力）
                     </h1>
 
-                    {/* システムエラー */}
                     {errors.system && (
                         <p className="mb-4 text-center text-sm text-red-600">
                             {errors.system}
                         </p>
                     )}
 
-                    {/* 登録時の全体エラー */}
                     {errors.submit &&
                         !isConfirmOpen && (
                             <p className="mb-4 text-center text-sm text-red-600">
@@ -90,8 +92,8 @@ export const RegisterProduct = () => {
                                     onBlur={handleNameBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.name
-                                        ? "border-red-500"
-                                        : "border-gray-300"
+                                            ? "border-red-500"
+                                            : "border-gray-300"
                                         }`}
                                 />
 
@@ -128,8 +130,8 @@ export const RegisterProduct = () => {
                                     onBlur={handlePriceBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.price
-                                        ? "border-red-500"
-                                        : "border-gray-300"
+                                            ? "border-red-500"
+                                            : "border-gray-300"
                                         }`}
                                 />
 
@@ -164,8 +166,7 @@ export const RegisterProduct = () => {
                                             ? ""
                                             : formData
                                                 .productStock
-                                                ?.quantity ??
-                                            ""
+                                                ?.quantity ?? ""
                                     }
                                     onChange={
                                         handleStockChange
@@ -173,9 +174,9 @@ export const RegisterProduct = () => {
                                     onBlur={handleStockBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.stock ||
-                                        errors.quantity
-                                        ? "border-red-500"
-                                        : "border-gray-300"
+                                            errors.quantity
+                                            ? "border-red-500"
+                                            : "border-gray-300"
                                         }`}
                                 />
 
@@ -205,13 +206,11 @@ export const RegisterProduct = () => {
                                     value={
                                         formData
                                             .productCategory
-                                            ?.categoryUuid ??
-                                        ""
+                                            ?.categoryUuid ?? ""
                                     }
                                     onChange={(event) =>
                                         handleCategoryChange(
-                                            event.target
-                                                .value
+                                            event.target.value
                                         )
                                     }
                                     onBlur={
@@ -219,10 +218,10 @@ export const RegisterProduct = () => {
                                     }
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.categoryUuid ||
-                                        errors.productCategory ||
-                                        errors.category
-                                        ? "border-red-500"
-                                        : "border-gray-300"
+                                            errors.productCategory ||
+                                            errors.category
+                                            ? "border-red-500"
+                                            : "border-gray-300"
                                         }`}
                                 >
                                     <option value="">
@@ -239,9 +238,7 @@ export const RegisterProduct = () => {
                                                     category.categoryUuid
                                                 }
                                             >
-                                                {
-                                                    category.name
-                                                }
+                                                {category.name}
                                             </option>
                                         )
                                     )}
@@ -259,6 +256,56 @@ export const RegisterProduct = () => {
                             </div>
                         </div>
 
+                        {/* 商品画像 */}
+                        <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+                            <label
+                                htmlFor="image"
+                                className="pt-2 text-right"
+                            >
+                                商品画像
+                            </label>
+
+                            <div>
+                                <input
+                                    id="image"
+                                    name="image"
+                                    type="file"
+                                    accept="image/jpeg,image/png"
+                                    onChange={
+                                        handleImageChange
+                                    }
+                                    disabled={isLoading}
+                                    className={`w-full rounded border px-3 py-2 ${errors.image
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                        }`}
+                                />
+
+                                {imageFile && (
+                                    <p className="mt-1 text-sm text-gray-600">
+                                        選択中：
+                                        {imageFile.name}
+                                    </p>
+                                )}
+
+                                {errors.image && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {errors.image}
+                                    </p>
+                                )}
+
+                                {imagePreviewUrl && (
+                                    <img
+                                        src={
+                                            imagePreviewUrl
+                                        }
+                                        alt="選択した商品画像のプレビュー"
+                                        className="mt-3 h-40 w-40 rounded border border-gray-300 object-contain"
+                                    />
+                                )}
+                            </div>
+                        </div>
+
                         {/* 入力画面ボタン */}
                         <div className="flex justify-center gap-6 pt-6">
                             <button
@@ -272,7 +319,10 @@ export const RegisterProduct = () => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading || hasValidationErrors}
+                                disabled={
+                                    isLoading ||
+                                    hasValidationErrors
+                                }
                                 className="rounded bg-green-600 px-5 py-2 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 確認
@@ -352,13 +402,31 @@ export const RegisterProduct = () => {
                                 <dd>
                                     {formData
                                         .productCategory
-                                        ?.name ??
-                                        "未選択"}
+                                        ?.name ?? "未選択"}
+                                </dd>
+                            </div>
+
+                            <div className="grid grid-cols-[120px_1fr] gap-4 border-b border-gray-200 pb-3">
+                                <dt className="font-semibold">
+                                    商品画像
+                                </dt>
+
+                                <dd>
+                                    {imagePreviewUrl ? (
+                                        <img
+                                            src={
+                                                imagePreviewUrl
+                                            }
+                                            alt="登録する商品画像"
+                                            className="h-24 w-24 rounded border border-gray-300 object-contain"
+                                        />
+                                    ) : (
+                                        "未選択"
+                                    )}
                                 </dd>
                             </div>
                         </dl>
 
-                        {/* 登録処理中のエラー */}
                         {errors.submit && (
                             <p className="mt-4 text-center text-sm text-red-600">
                                 {errors.submit}

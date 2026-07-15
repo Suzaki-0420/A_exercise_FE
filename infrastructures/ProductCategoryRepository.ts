@@ -54,57 +54,21 @@ export class ProductCategoryRepository
     }
 
     /**
-     * 指定された商品カテゴリUUIDの商品カテゴリを取得する
+     * 商品カテゴリUUIDを指定して商品カテゴリを取得する
      */
     public async findById(
         categoryUuid: string
     ): Promise<ProductCategory | null> {
-        // TODO: 実際のControllerのURLに合わせて修正する
-        const url =
-            `/proxy-api/product/categories`;
+        /*
+         * 商品カテゴリ1件取得APIがないため、
+         * 一覧取得後にUUIDで検索する。
+         */
+        const categories = await this.findAll();
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (response.status === 404) {
-            return null;
-        }
-
-        if (!response.ok) {
-            const errorData = await response
-                .json()
-                .catch(() => ({}));
-
-            console.log("========== API ERROR ==========");
-            console.log("findById url:", url);
-            console.log("findById status:", response.status);
-            console.log("findById error body:", errorData);
-            console.log("===============================");
-
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            if (errorData.errors) {
-                const messages = Object.values(
-                    errorData.errors
-                )
-                    .flat()
-                    .join("\n");
-
-                throw new Error(messages);
-            }
-
-            throw new Error(
-                `商品カテゴリの取得に失敗しました (Status: ${response.status})`
-            );
-        }
-
-        return await response.json();
+        return categories.find(
+            category =>
+                category.categoryUuid === categoryUuid
+        ) ?? null;
     }
 
     /**
@@ -119,7 +83,7 @@ export class ProductCategoryRepository
 
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/admin/product-category/validate?${params.toString()}`;
+            `/proxy-api/admin/category/validate?${params.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",

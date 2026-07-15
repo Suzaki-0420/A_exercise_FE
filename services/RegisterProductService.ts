@@ -48,8 +48,9 @@ export class RegisterProductService
      * 商品を登録する
      */
     public async registerProduct(
-        product: Product
+        product: Product,
+        imageFile: File
     ): Promise<Product> {
-        return await this.productRepository.register(product);
+        return await this.productRepository.register(product, imageFile);
     }
 }

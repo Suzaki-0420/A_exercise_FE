@@ -3,35 +3,139 @@ import type { EmployeeAccount } from "@/models/EmployeeAccount";
 import { injectable } from "inversify";
 
 /**
- * 社員アカウントRepository
+ * 担当者アカウントRepository
  */
 @injectable()
 export class EmployeeAccountRepository
     implements IEmployeeAccountRepository {
 
     /**
-     * 社員アカウントを登録する
+     * アカウント未登録社員一覧を取得する
+     */
+    public async getForm():
+        Promise<EmployeeAccount[]> {
+
+        const url = "/proxy-api/account/form";
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
+
+        if (!response.ok) {
+            const errorData = await response
+                .json()
+                .catch(() => ({}));
+
+            console.log("========== API ERROR ==========");
+            console.log("getForm url:", url);
+            console.log("getForm status:", response.status);
+            console.log("getForm error body:", errorData);
+            console.log("===============================");
+
+            if (errorData.message) {
+                throw new Error(errorData.message);
+            }
+
+            throw new Error(
+                `未登録社員一覧の取得に失敗しました (Status: ${response.status})`
+            );
+        }
+
+        return await response.json();
+    }
+
+    /**
+ * アカウント名が既に存在するか確認する
+ */
+    public async existsByAccountName(
+        accountName: string
+    ): Promise<boolean> {
+        const params = new URLSearchParams({
+            accountName,
+        });
+
+        const url =
+            `/proxy-api/account/validate?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
+
+        /*
+         * 409 Conflictは、
+         * アカウント名が既に存在することを表す。
+         */
+        if (response.status === 409) {
+            return true;
+        }
+
+        if (!response.ok) {
+            const errorData = await response
+                .json()
+                .catch(() => ({}));
+
+            console.log("========== API ERROR ==========");
+            console.log("validate url:", url);
+            console.log("validate status:", response.status);
+            console.log("validate error body:", errorData);
+            console.log("===============================");
+
+            if (errorData.message) {
+                throw new Error(errorData.message);
+            }
+
+            if (errorData.errors) {
+                const messages = Object.values(
+                    errorData.errors
+                )
+                    .flat()
+                    .join("\n");
+
+                throw new Error(messages);
+            }
+
+            throw new Error(
+                `アカウント名の確認に失敗しました (Status: ${response.status})`
+            );
+        }
+
+        /*
+         * 200 OKの場合はレスポンスのexistsを使用する。
+         *
+         * バックエンドの正常レスポンス例:
+         * {
+         *   "exists": false,
+         *   "message": "使用できるアカウント名です"
+         * }
+         */
+        const responseData = await response.json() as {
+            exists?: boolean;
+        };
+
+        return responseData.exists ?? false;
+    }
+
+    /**
+     * 担当者アカウントを登録する
      */
     public async create(
         employeeAccount: EmployeeAccount
     ): Promise<EmployeeAccount> {
-        /*
-         * TODO:
-         * 実際のControllerのURLに合わせて変更してください。
-         */
         const url = "/proxy-api/account/register";
 
-        /*
-         * バックエンドの登録用ViewModelへ合わせた送信データ。
-         *
-         * プロパティ名は、実際のViewModelに合わせて
-         * 修正する必要があります。
-         */
         const requestBody = {
+            employeeUuid:
+                employeeAccount.employee?.employeeUuid,
             accountName: employeeAccount.name,
             password: employeeAccount.password,
-            employeeUuid:
-                employeeAccount.employee?.employeeUuid ?? null,
         };
 
         const response = await fetch(url, {
@@ -39,6 +143,7 @@ export class EmployeeAccountRepository
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include",
             body: JSON.stringify(requestBody),
         });
 
@@ -58,9 +163,10 @@ export class EmployeeAccountRepository
                 "==============================================="
             );
 
-            /*
-             * ASP.NET Coreのフィールド別エラーに対応する。
-             */
+            if (errorData.message) {
+                throw new Error(errorData.message);
+            }
+
             if (errorData.errors) {
                 const fieldErrors: {
                     [key: string]: string;
@@ -87,201 +193,19 @@ export class EmployeeAccountRepository
                 );
             }
 
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
             throw new Error(
-                `社員アカウントの登録に失敗しました ` +
-                `(Status: ${response.status})`
+                `担当者アカウントの登録に失敗しました (Status: ${response.status})`
             );
         }
 
-        return await response.json();
-    }
+        const responseData = await response.json();
 
-    /**
-     * アカウント名に一致する社員アカウントを取得する
-     */
-    public async findByName(
-        accountName: string
-    ): Promise<EmployeeAccount | null> {
-        const params = new URLSearchParams({
-            accountName,
-        });
-
-        /*
-         * TODO:
-         * 実際のControllerのURLに合わせて変更してください。
-         */
-        const url =
-            `/proxy-api/account/validate?${params.toString()}`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (response.status === 404) {
-            return null;
-        }
-
-        if (!response.ok) {
-            const errorData = await response
-                .json()
-                .catch(() => ({}));
-
-            console.log("========== API ERROR ==========");
-            console.log("findByName url:", url);
-            console.log(
-                "findByName status:",
-                response.status
-            );
-            console.log(
-                "findByName error body:",
-                errorData
-            );
-            console.log("===============================");
-
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            throw new Error(
-                `社員アカウントの取得に失敗しました ` +
-                `(Status: ${response.status})`
-            );
-        }
-
-        return await response.json();
-    }
-
-    /**
-     * アカウント名が既に存在するか確認する
-     */
-    public async existsByAccountName(
-        accountName: string
-    ): Promise<boolean> {
-        const params = new URLSearchParams({
-            accountName,
-        });
-
-        /*
-         * TODO:
-         * 実際のControllerのURLに合わせて変更してください。
-         */
-        const url =
-            `/proxy-api/account/validate?${params.toString()}`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response
-                .json()
-                .catch(() => ({}));
-
-            console.log("========== API ERROR ==========");
-            console.log(
-                "existsByAccountName url:",
-                url
-            );
-            console.log(
-                "existsByAccountName status:",
-                response.status
-            );
-            console.log(
-                "existsByAccountName error body:",
-                errorData
-            );
-            console.log("===============================");
-
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            throw new Error(
-                `アカウント名の存在確認に失敗しました ` +
-                `(Status: ${response.status})`
-            );
-        }
-
-        /*
-         * 次のようなレスポンスを想定しています。
-         *
-         * {
-         *     "exists": true
-         * }
-         */
-        const data: { exists: boolean } =
-            await response.json();
-
-        return data.exists;
-    }
-
-    /**
-     * 社員UUIDに紐づくアカウントが既に存在するか確認する
-     */
-    public async existsByEmployeeUuid(
-        employeeUuid: string
-    ): Promise<boolean> {
-        const params = new URLSearchParams({
-            employeeUuid,
-        });
-
-        /*
-         * TODO:
-         * 実際のControllerのURLに合わせて変更してください。
-         */
-        const url =
-            `/proxy-api/account/exists/employee?${params.toString()}`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response
-                .json()
-                .catch(() => ({}));
-
-            console.log("========== API ERROR ==========");
-            console.log(
-                "existsByEmployeeUuid url:",
-                url
-            );
-            console.log(
-                "existsByEmployeeUuid status:",
-                response.status
-            );
-            console.log(
-                "existsByEmployeeUuid error body:",
-                errorData
-            );
-            console.log("===============================");
-
-            if (errorData.message) {
-                throw new Error(errorData.message);
-            }
-
-            throw new Error(
-                `社員アカウントの存在確認に失敗しました ` +
-                `(Status: ${response.status})`
-            );
-        }
-
-        const data: { exists: boolean } =
-            await response.json();
-
-        return data.exists;
+        return {
+            accountUuid:
+                responseData.accountUuid ?? "",
+            name: responseData.accountName,
+            password: responseData.password,
+            employee: employeeAccount.employee,
+        };
     }
 }

@@ -20,5 +20,5 @@ export interface IRegisterProductService {
     /**
      * 商品を登録する
      */
-    registerProduct(product: Product): Promise<Product>;
+    registerProduct(product: Product, imageFile: File): Promise<Product>;
 }

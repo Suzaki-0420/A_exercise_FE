@@ -5,6 +5,19 @@ import { ProductCategory } from "@/models/ProductCategory";
  * 商品Repositoryインターフェイス
  */
 export interface IProductRepository {
+
+    /**
+     * すべての商品を取得する
+     */
+    findAll(): Promise<Product[]>;
+
+    /**
+     * 商品UUIDを指定して商品を取得する
+     */
+    findById(
+        productUuid: string
+    ): Promise<Product | null>;
+
     /**
      * 指定されたキーワードを商品名に含む商品を取得する
      */
@@ -30,7 +43,7 @@ export interface IProductRepository {
     /**
      * 商品を登録する
      */
-    register(product: Product): Promise<Product>;
+    register(product: Product, imageFile: File): Promise<Product>;
 
     /**
      * 商品を更新する
