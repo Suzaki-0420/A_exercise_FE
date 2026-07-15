@@ -16,6 +16,13 @@ export interface LoggedInAdmin {
 }
 
 /**
+ * 担当者ログアウト成功時の結果
+ */
+export interface AdminLogoutResult {
+    loggedOut: boolean;
+}
+
+/**
  * ログインフォームの項目別エラー
  */
 export type AdminLoginFieldErrors = Partial<
@@ -35,5 +42,15 @@ export class AdminLoginError extends Error {
         super(message);
         this.name = "AdminLoginError";
         this.fieldErrors = fieldErrors;
+    }
+}
+
+/**
+ * 担当者ログアウト処理で画面へ通知するエラー
+ */
+export class AdminLogoutError extends Error {
+    public constructor(message: string) {
+        super(message);
+        this.name = "AdminLogoutError";
     }
 }
