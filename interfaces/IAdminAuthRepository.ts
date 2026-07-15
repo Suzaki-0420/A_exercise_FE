@@ -13,4 +13,9 @@ export interface IAdminAuthRepository {
     login(
         credentials: AdminLoginCredentials
     ): Promise<LoggedInAdmin>;
+
+    /**
+     * 担当者をログアウトする
+     */
+    logout(): Promise<void>;
 }
