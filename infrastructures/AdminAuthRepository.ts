@@ -1,8 +1,10 @@
 import type { IAdminAuthRepository } from "@/interfaces/IAdminAuthRepository";
 import {
     AdminLoginError,
+    AdminLogoutError,
     type AdminLoginCredentials,
     type AdminLoginFieldErrors,
+    type AdminLogoutResult,
     type LoggedInAdmin,
 } from "@/models/AdminAuth";
 import { injectable } from "inversify";
@@ -13,9 +15,9 @@ type ApiError = {
     field?: string | null;
 };
 
-type LoginApiResponse = {
+type ApiResponse<T> = {
     success?: boolean;
-    data?: LoggedInAdmin | null;
+    data?: T | null;
     errors?: ApiError[] | Record<string, string[]>;
     message?: string;
 };
@@ -27,15 +29,15 @@ const isRecord = (
     value !== null &&
     !Array.isArray(value);
 
-const parseResponseBody = async (
+const parseResponseBody = async <T>(
     response: Response
-): Promise<LoginApiResponse> => {
+): Promise<ApiResponse<T>> => {
     const body: unknown = await response
         .json()
         .catch(() => null);
 
     return isRecord(body)
-        ? (body as LoginApiResponse)
+        ? (body as ApiResponse<T>)
         : {};
 };
 
@@ -57,7 +59,7 @@ const normalizeFieldName = (
 };
 
 const getFieldErrors = (
-    errors: LoginApiResponse["errors"]
+    errors: ApiResponse<unknown>["errors"]
 ): AdminLoginFieldErrors => {
     if (!errors || Array.isArray(errors)) {
         return {};
@@ -86,7 +88,7 @@ const getFieldErrors = (
 
 const getErrorMessage = (
     response: Response,
-    body: LoginApiResponse
+    body: ApiResponse<unknown>
 ): string => {
     if (Array.isArray(body.errors)) {
         const apiMessage = body.errors.find(
@@ -112,6 +114,31 @@ const getErrorMessage = (
         default:
             return "システムエラーが発生しました。管理者に連絡してください。";
     }
+};
+
+const getLogoutErrorMessage = (
+    response: Response,
+    body: ApiResponse<unknown>
+): string => {
+    if (Array.isArray(body.errors)) {
+        const apiMessage = body.errors.find(
+            (error) => error.message
+        )?.message;
+
+        if (apiMessage) {
+            return apiMessage;
+        }
+    }
+
+    if (body.message) {
+        return body.message;
+    }
+
+    if (response.status === 401) {
+        return "ログインの有効期限が切れています。再度ログインしてください。";
+    }
+
+    return "ログアウトできませんでした。しばらく経ってから再度お試しください。";
 };
 
 /**
@@ -149,7 +176,9 @@ export class AdminAuthRepository
             );
         }
 
-        const body = await parseResponseBody(response);
+        const body = await parseResponseBody<LoggedInAdmin>(
+            response
+        );
 
         if (!response.ok) {
             throw new AdminLoginError(
@@ -171,5 +200,47 @@ export class AdminAuthRepository
         }
 
         return body.data;
+    }
+
+    /**
+     * 担当者をログアウトする
+     */
+    public async logout(): Promise<void> {
+        let response: Response;
+
+        try {
+            response = await fetch(
+                "/proxy-api/auth/logout",
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                }
+            );
+        } catch {
+            throw new AdminLogoutError(
+                "サーバーに接続できませんでした。しばらく経ってから再度お試しください。"
+            );
+        }
+
+        const body = await parseResponseBody<AdminLogoutResult>(
+            response
+        );
+
+        if (!response.ok) {
+            throw new AdminLogoutError(
+                getLogoutErrorMessage(response, body),
+                response.status
+            );
+        }
+
+        if (
+            body.success !== true ||
+            body.data?.loggedOut !== true
+        ) {
+            throw new AdminLogoutError(
+                "ログアウト結果を確認できませんでした。管理者に連絡してください。"
+            );
+        }
     }
 }

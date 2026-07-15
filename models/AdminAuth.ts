@@ -49,8 +49,14 @@ export class AdminLoginError extends Error {
  * 担当者ログアウト処理で画面へ通知するエラー
  */
 export class AdminLogoutError extends Error {
-    public constructor(message: string) {
+    public readonly status?: number;
+
+    public constructor(
+        message: string,
+        status?: number
+    ) {
         super(message);
         this.name = "AdminLogoutError";
+        this.status = status;
     }
 }
