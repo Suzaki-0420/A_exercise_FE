@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
     return [
       {
         /**
+         * 担当者認証API用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL
+         * destination: 担当者認証APIエンドポイント
+         */
+        source: '/proxy-api/auth/:path*',
+        destination: 'http://127.0.0.1:5126/api/admin/auth/:path*',
+      },
+      {
+        /**
          * 担当者アカウントAPI用のプロキシ設定
          * source: フロントエンド側で呼び出すURL（相対パス）
          * destination: 実際にデータを取得しに行くバックエンドURL
