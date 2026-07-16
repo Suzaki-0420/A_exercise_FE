@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
+  /**
+   * Azure Blob Storage上の商品画像を
+   * next/imageで表示するための許可設定
+   */
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "trainingstorage20260713.blob.core.windows.net",
+        port: "",
+        pathname: "/product-images/products/**",
+      },
+    ],
+  },
   /* config options here */
   async rewrites() {
     return [
@@ -53,6 +68,7 @@ const nextConfig: NextConfig = {
       },
     ]
   }
+
 };
 
 export default nextConfig;
