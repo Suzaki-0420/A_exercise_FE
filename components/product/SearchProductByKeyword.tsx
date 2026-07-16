@@ -73,7 +73,7 @@ export const ProductSearch = () => {
                         }
                     />
                     <Label htmlFor="showDeletedOnly">
-                        削除済みのみ
+                        削除済み
                     </Label>
                 </div>
             </div>
