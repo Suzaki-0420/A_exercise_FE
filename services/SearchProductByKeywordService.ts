@@ -8,7 +8,7 @@ import { ISearchProductServiceByKeywordService } from "@/interfaces/ISearchProdu
  * 商品キーワード検索サービスインターフェイスの実装
  */
 @injectable()
-export class SearchProductService implements ISearchProductServiceByKeywordService {
+export class SearchProductServiceByKeywordService implements ISearchProductServiceByKeywordService {
     
     /**
      * コンストラクタ

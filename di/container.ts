@@ -14,6 +14,8 @@ import type { ILogoutAdminService } from "@/interfaces/ILogoutAdminService";
 import { LogoutAdminService } from "@/services/LogoutAdminService";
 import { Container } from "inversify";
 import { TYPES } from "./types";
+import { SearchProductServiceByKeywordService } from "@/services/SearchProductByKeywordService";
+import { ISearchProductServiceByKeywordService } from "@/interfaces/ISearchProductByKeywordService";
 
 
 /**
@@ -33,5 +35,6 @@ container.bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository).to(AdminAuthRep
 container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
 container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
 container.bind<ILogoutAdminService>(TYPES.ILogoutAdminService).to(LogoutAdminService);
+container.bind<ISearchProductServiceByKeywordService>(TYPES.ISearchProductServiceByKeywordService).to(SearchProductServiceByKeywordService);
 
 export { container };

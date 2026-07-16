@@ -1,0 +1,9 @@
+import { ProductSearch } from "@/components/product/SearchProductByKeyword";
+
+
+/**
+ * 新商品登録（入力）ページ
+ */
+export default function ProductPage() {
+    return <ProductSearch />;
+}
