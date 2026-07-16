@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
          * destination: 担当者認証APIエンドポイント
          */
         source: '/proxy-api/auth/:path*',
-        destination: 'http://127.0.0.1:5126/api/admin/auth/:path*',
+        destination: 'http://74.176.217.130/api/admin/auth/:path*',
       },
       {
         /**
@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
          *   API専用の入り口として「/proxy-api/」を冠しています。
          */
         source: '/proxy-api/account/:path*',
-        destination: 'http://127.0.0.1/admin/account/:path*',
+        destination: 'http://74.176.217.130/admin/account/:path*',
       },
       {
         /**
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
          * destination: 商品管理APIエンドポイント
          */
         source: '/proxy-api/product/:path*',
-        destination: 'http://127.0.0.1:5126/admin/product/:path*',
+        destination: 'http://74.176.217.130/admin/product/:path*',
       },
       {
         /**
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
          * destination: 商品管理APIエンドポイント
          */
         source: '/proxy-api/category/:path*',
-        destination: 'http://127.0.0.1:5126/admin/category/:path*',
+        destination: 'http://74.176.217.130/admin/category/:path*',
       },
       {
         /**
@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
          * destination: 商品管理APIエンドポイント
          */
         source: '/proxy-api/order/:path*',
-        destination: 'http://127.0.0.1:5126/admin/order/:path*',
+        destination: 'http://74.176.217.130/admin/order/:path*',
       },
     ]
   }
