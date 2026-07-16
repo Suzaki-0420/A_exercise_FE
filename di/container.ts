@@ -16,6 +16,8 @@ import { Container } from "inversify";
 import { TYPES } from "./types";
 import { SearchProductServiceByKeywordService } from "@/services/SearchProductByKeywordService";
 import { ISearchProductServiceByKeywordService } from "@/interfaces/ISearchProductByKeywordService";
+import { IRegisterCategoryService } from "@/interfaces/IRegisterCategoryService";
+import { RegisterCategoryService } from "@/services/RegisterCategoryService";
 
 
 /**
@@ -36,5 +38,6 @@ container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(Regist
 container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
 container.bind<ILogoutAdminService>(TYPES.ILogoutAdminService).to(LogoutAdminService);
 container.bind<ISearchProductServiceByKeywordService>(TYPES.ISearchProductServiceByKeywordService).to(SearchProductServiceByKeywordService);
+container.bind<IRegisterCategoryService>(TYPES.IRegisterCategoryService).to(RegisterCategoryService);
 
 export { container };
