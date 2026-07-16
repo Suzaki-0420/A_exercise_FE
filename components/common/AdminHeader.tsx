@@ -1,3 +1,4 @@
+import { AdminLogoutButton } from "@/components/api/auth/logout/AdminLogoutButton";
 import Link from "next/link";
 
 /**
@@ -35,13 +36,7 @@ export const AdminHeader = () => {
                         アカウント登録
                     </Link>
 
-                    {/* TODO: 認証機能実装後にログアウト処理を追加 */}
-                    <button
-                        type="button"
-                        className="border border-green-500 px-3 py-1 text-green-700"
-                    >
-                        ログアウト
-                    </button>
+                    <AdminLogoutButton />
                 </nav>
             </div>
         </header>
