@@ -30,7 +30,8 @@ import { IRegisterEmployeeAccountService } from "@/interfaces/IRegisterEmployeeA
 import { RegisterEmployeeAccountService } from "@/services/RegisterEmployeeAccountService";
 import { IDeleteProductService } from "@/interfaces/IDeleteProductService";
 import { DeleteProductService } from "@/services/DeleteProductService";
-
+import { IUpdateOrderStatusService } from "@/interfaces/IUpdateOrderStatusService";
+import { UpdateOrderStatusService } from "@/services/UpdateOrderStatusService";
 
 
 /**
@@ -58,5 +59,5 @@ container.bind<ISearchOrdersService>(TYPES.ISearchOrdersService).to(SearchOrders
 container.bind<IRegisterEmployeeAccountService>(TYPES.IRegisterEmployeeAccountService).to(RegisterEmployeeAccountService);
 container.bind<IDeleteProductService>(TYPES.IDeleteProductService).to(DeleteProductService);
 container.bind<IUpdateProductService>(TYPES.IUpdateProductService).to(UpdateProductService);
-
+container.bind<IUpdateOrderStatusService>(TYPES.IUpdateOrderStatusService).to(UpdateOrderStatusService);
 export { container };
