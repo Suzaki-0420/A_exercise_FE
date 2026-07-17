@@ -22,6 +22,10 @@ import { IRegisterCategoryService } from "@/interfaces/IRegisterCategoryService"
 import { RegisterCategoryService } from "@/services/RegisterCategoryService";
 import { SearchProductByCategoryService } from "@/services/SearchProductByCategoryService";
 import { ISearchProductByCategoryService } from "@/interfaces/ISearchProductByCategoryService";
+import { ISearchOrdersService } from "@/interfaces/ISearchOrdersService";
+import { SearchOrdersService } from "@/services/SearchOrdersService";
+import { IRegisterEmployeeAccountService } from "@/interfaces/IRegisterEmployeeAccountService";
+import { RegisterEmployeeAccountService } from "@/services/RegisterEmployeeAccountService";
 
 
 
@@ -46,5 +50,7 @@ container.bind<ILogoutAdminService>(TYPES.ILogoutAdminService).to(LogoutAdminSer
 container.bind<ISearchProductByKeywordService>(TYPES.ISearchProductByKeywordService).to(SearchProductByKeywordService);
 container.bind<IRegisterCategoryService>(TYPES.IRegisterCategoryService).to(RegisterCategoryService);
 container.bind<ISearchProductByCategoryService>(TYPES.ISearchProductByCategoryService).to(SearchProductByCategoryService);
+container.bind<ISearchOrdersService>(TYPES.ISearchOrdersService).to(SearchOrdersService);
+container.bind<IRegisterEmployeeAccountService>(TYPES.IRegisterEmployeeAccountService).to(RegisterEmployeeAccountService);
 
 export { container };
