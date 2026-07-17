@@ -283,7 +283,7 @@ describe("ProductCategoryRepository", () => {
             fetchMock.mockResolvedValue(
                 createErrorResponse({
                     errors: {
-                        CategoryName:[
+                        CategoryName: [
                             "カテゴリ名重複"
                         ]
                     }
@@ -324,6 +324,56 @@ describe("ProductCategoryRepository", () => {
                     "商品カテゴリ名の検証に失敗しました (Status: 500)"
                 );
         });
+
+        it("エラーレスポンスのjson解析に失敗した場合は既定エラーをthrowする", async () => {
+
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 500,
+                json: vi.fn()
+                    .mockRejectedValue(
+                        new Error("JSON parse error")
+                    ),
+            } as unknown as Response);
+
+
+            await expect(
+                repository.existsByName(
+                    "食品"
+                )
+            )
+                .rejects
+                .toThrow(
+                    "商品カテゴリ名の検証に失敗しました (Status: 500)"
+                );
+        });
+
+        it("errorsが複数項目ある場合も結合する", async () => {
+
+            fetchMock.mockResolvedValue(
+                createErrorResponse({
+                    errors: {
+                        CategoryName: [
+                            "カテゴリ名重複"
+                        ],
+                        CategoryCode: [
+                            "コード重複"
+                        ]
+                    }
+                })
+            );
+
+
+            await expect(
+                repository.existsByName(
+                    "食品"
+                )
+            )
+                .rejects
+                .toThrow(
+                    "カテゴリ名重複\nコード重複"
+                );
+        });
     });
 
 
@@ -362,12 +412,33 @@ describe("ProductCategoryRepository", () => {
                 .toHaveBeenCalledWith(
                     "/proxy-api/category/register",
                     expect.objectContaining({
-                        method:"POST"
+                        method: "POST"
                     })
                 );
         });
 
+        it("エラーレスポンスのjson解析に失敗した場合は既定エラーをthrowする", async () => {
 
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 500,
+                json: vi.fn()
+                    .mockRejectedValue(
+                        new Error("JSON parse error")
+                    ),
+            } as unknown as Response);
+
+
+            await expect(
+                repository.create(
+                    createCategory()
+                )
+            )
+                .rejects
+                .toThrow(
+                    "商品カテゴリの登録に失敗しました (Status: 500)"
+                );
+        });
 
         it("messageエラーの場合はthrowする", async () => {
 
@@ -396,8 +467,8 @@ describe("ProductCategoryRepository", () => {
 
             fetchMock.mockResolvedValue(
                 createErrorResponse({
-                    errors:{
-                        CategoryName:[
+                    errors: {
+                        CategoryName: [
                             "カテゴリ名は必須です"
                         ]
                     }
@@ -416,7 +487,52 @@ describe("ProductCategoryRepository", () => {
                 );
         });
 
+        it("validation errorsが複数項目ある場合も処理する", async () => {
 
+            fetchMock.mockResolvedValue(
+                createErrorResponse({
+                    errors: {
+                        CategoryName: [
+                            "カテゴリ名は必須です"
+                        ],
+                        CategoryCode: [
+                            "コードは必須です"
+                        ]
+                    }
+                })
+            );
+
+
+            await expect(
+                repository.create(
+                    createCategory()
+                )
+            )
+                .rejects
+                .toThrow(
+                    "カテゴリ名は必須です"
+                );
+        });
+
+        it("validation errorsが空配列の場合も処理する", async () => {
+
+            fetchMock.mockResolvedValue(
+                createErrorResponse({
+                    errors: {
+                        CategoryName: []
+                    }
+                })
+            );
+
+
+            await expect(
+                repository.create(
+                    createCategory()
+                )
+            )
+                .rejects
+                .toThrow();
+        });
 
         it("messageもerrorsもない場合は既定エラーをthrowする", async () => {
 
@@ -445,7 +561,7 @@ describe("ProductCategoryRepository", () => {
 
             fetchMock.mockResolvedValue(
                 createErrorResponse({
-                    errors:{
+                    errors: {
                         CategoryName:
                             "カテゴリ名エラー"
                     }

@@ -339,24 +339,78 @@ describe("ProductRepository", () => {
             expect(result).toEqual([]);
         });
 
+        it("カテゴリUUIDが空文字の場合はproductCategoryUuidを送信しない", async () => {
+
+            fetchMock.mockResolvedValue(
+                createResponse([])
+            );
+
+
+            await repository.selectByProductCategoryId(
+                "",
+                false
+            );
+
+
+            expect(fetchMock)
+                .toHaveBeenCalledWith(
+                    "/proxy-api/product/category?showDeletedOnly=false",
+                    expect.objectContaining({
+                        method: "GET",
+                        cache: "no-store",
+                    })
+                );
+        });
+
         it("HTTPエラーの場合はステータスを含む例外を投げる", async () => {
+
             fetchMock.mockResolvedValue({
                 ok: false,
                 status: 500,
-                clone: () => ({
-                    text: vi.fn()
-                        .mockResolvedValue("error"),
-                }),
-            });
+                statusText: "Internal Server Error",
+
+                text: vi.fn()
+                    .mockResolvedValue("error"),
+
+            } as unknown as Response);
+
 
             await expect(
                 repository.selectByProductCategoryId(
                     "category-uuid",
                     false
                 )
-            ).rejects.toThrow(
-                "商品カテゴリによる検索に失敗しました (Status: 500)"
-            );
+            )
+                .rejects
+                .toThrow(
+                    "商品カテゴリによる検索に失敗しました (Status: 500)"
+                );
+        });
+
+        it("HTTPエラー時にstatusTextが未定義でも例外を投げる", async () => {
+
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 400,
+
+                text: vi.fn()
+                    .mockResolvedValue(
+                        "Bad Request"
+                    ),
+
+            } as unknown as Response);
+
+
+            await expect(
+                repository.selectByProductCategoryId(
+                    "category-uuid",
+                    false
+                )
+            )
+                .rejects
+                .toThrow(
+                    "商品カテゴリによる検索に失敗しました (Status: 400)"
+                );
         });
 
         it("fetchが失敗した場合は例外をそのまま投げる", async () => {
@@ -405,23 +459,19 @@ describe("ProductRepository", () => {
             );
 
             const expectedUrl =
-                `/proxy-api/product/category?categoryUuid=${encodeURIComponent(
+                `/proxy-api/product/category?productCategoryUuid=${encodeURIComponent(
                     "category+uuid"
                 )}&showDeletedOnly=false`;
+
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
                     expectedUrl,
-                    {
+                    expect.objectContaining({
                         method: "GET",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                        },
-                    }
+                    })
                 );
         });
-
         it("カテゴリUUIDとshowDeletedOnly=trueをURLに含める", async () => {
             fetchMock.mockResolvedValue(
                 createResponse([])
@@ -433,20 +483,90 @@ describe("ProductRepository", () => {
             );
 
             const expectedUrl =
-                `/proxy-api/product/category?categoryUuid=${encodeURIComponent(
+                `/proxy-api/product/category?productCategoryUuid=${encodeURIComponent(
                     "category-uuid"
                 )}&showDeletedOnly=true`;
+
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
                     expectedUrl,
-                    {
+                    expect.objectContaining({
                         method: "GET",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                        },
-                    }
+                    })
+                );
+        });
+
+        it("カテゴリUUIDが空文字の場合はproductCategoryUuidを送信しない", async () => {
+            fetchMock.mockResolvedValue(
+                createResponse([])
+            );
+
+
+            await repository.selectByProductCategoryId(
+                "",
+                false
+            );
+
+
+            expect(fetchMock)
+                .toHaveBeenCalledWith(
+                    "/proxy-api/product/category?showDeletedOnly=false",
+                    expect.objectContaining({
+                        method: "GET",
+                        cache: "no-store",
+                    })
+                );
+        });
+
+
+        it("HTTPエラー時にresponse.text()が失敗しても例外を投げる", async () => {
+
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 500,
+                statusText: "Internal Server Error",
+
+                text: vi.fn()
+                    .mockRejectedValue(
+                        new Error("Text Error")
+                    ),
+
+            } as unknown as Response);
+
+
+            await expect(
+                repository.selectByProductCategoryId(
+                    "category-uuid",
+                    false
+                )
+            )
+                .rejects
+                .toThrow(
+                    "Text Error"
+                );
+        });
+
+        it("カテゴリUUIDに特殊文字がある場合URLエンコードする", async () => {
+
+            fetchMock.mockResolvedValue(
+                createResponse([])
+            );
+
+
+            await repository.selectByProductCategoryId(
+                "category uuid/test",
+                false
+            );
+
+
+            expect(fetchMock)
+                .toHaveBeenCalledWith(
+                    "/proxy-api/product/category?productCategoryUuid=category+uuid%2Ftest&showDeletedOnly=false",
+                    expect.objectContaining({
+                        method: "GET",
+                        cache: "no-store",
+                    })
                 );
         });
     });
