@@ -5,10 +5,26 @@ import { Product } from "@/models/Product";
 
 type ProductCardProps = {
     product: Product;
+    /**
+     * 更新ボタン押下
+     */
+    onUpdate: (
+        product: Product
+    ) => void;
+
+    /**
+     * 削除ボタンが押されたとき、
+     * 対象商品を親へ通知する。
+     */
+    onDelete: (
+        product: Product
+    ) => void;
 };
 
 export const ProductCard = ({
     product,
+    onUpdate,
+    onDelete,
 }: ProductCardProps) => {
     return (
         <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -51,6 +67,31 @@ export const ProductCard = ({
                             0}
                         個
                     </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            onUpdate(product);
+                        }}
+                        className="rounded border border-blue-600 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50"
+                    >
+                        更新
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            console.log(
+                                "ProductCard 削除クリック:",
+                                product
+                            );
+                            onDelete(product);
+                        }}
+                        className="rounded border border-red-600 px-4 py-2 font-semibold text-red-600 hover:bg-red-50"
+                    >
+                        削除
+                    </button>
                 </div>
             </div>
         </div>

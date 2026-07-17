@@ -1,4 +1,4 @@
-import { ProductSearch } from "@/components/product/SearchProductByKeyword";
+import { ProductSearch } from "@/components/product/ProductSearch";
 
 
 /**

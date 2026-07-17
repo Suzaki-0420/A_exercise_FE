@@ -375,7 +375,7 @@ export class ProductRepository implements IProductRepository {
     ): Promise<boolean> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/admin/product/${product.productUuid}`;
+            `/proxy-api/product/${product.productUuid}`;
 
         const requestBody = {
             name: product.name,
@@ -456,7 +456,7 @@ export class ProductRepository implements IProductRepository {
     ): Promise<boolean> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/admin/product/${productUuid}`;
+            `/proxy-api/product/delete/${productUuid}`;
 
         const response = await fetch(url, {
             method: "DELETE",
