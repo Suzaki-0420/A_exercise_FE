@@ -79,7 +79,9 @@ describe("OrdersRepository", () => {
             ];
 
             fetchMock.mockResolvedValue(
-                createResponse(orders)
+                createResponse({
+                    orderList: orders
+                })
             );
 
 
@@ -158,7 +160,9 @@ describe("OrdersRepository", () => {
         it("条件指定検索できる", async () => {
 
             fetchMock.mockResolvedValue(
-                createResponse([])
+                createResponse({
+                    orderList: []
+                })
             );
 
 
