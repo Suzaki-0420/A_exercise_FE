@@ -134,7 +134,7 @@ export class ProductCategoryRepository
             "/proxy-api/category/register";
 
         const requestBody = {
-            name: productCategory.name,
+            categoryName: productCategory.name,
         };
 
         const response = await fetch(url, {
@@ -196,6 +196,11 @@ export class ProductCategoryRepository
             );
         }
 
-        return await response.json();
+        const responseData = await response.json() as {
+            message: string;
+            category: ProductCategory;
+        };
+
+        return responseData.category;
     }
 }

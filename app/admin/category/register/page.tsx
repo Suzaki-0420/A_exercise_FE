@@ -1,5 +1,5 @@
 import { RegisterCategory } from
-    "@/components/category/RegisterCategory";
+    "@/components/category/register/RegisterCategory";
 
 /**
  * 商品カテゴリー登録ページ
