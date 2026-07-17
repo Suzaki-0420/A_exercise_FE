@@ -1,7 +1,9 @@
 import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
-import { ISearchProductByCategoryService } from "@/interfaces/ISearchProductByCategoryService";
-import { Product } from "@/models/Product";
+
+import type { Product } from "@/models/Product";
+import type { ISearchProductByCategoryService } from "@/interfaces/ISearchProductByCategoryService";
+
 import {
     useCallback,
     useMemo,
@@ -9,27 +11,31 @@ import {
 } from "react";
 
 /**
- * 商品カテゴリ検索のStateと操作を提供するカスタムフック
+ * 商品をカテゴリで検索するカスタムフック
  */
 export const useSearchProductByCategory = () => {
-    // 検索結果
+    /**
+     * カテゴリ検索結果
+     */
     const [products, setProducts] =
         useState<Product[]>([]);
 
-    // 通信中フラグ
+    /**
+     * 通信中フラグ
+     */
     const [isLoading, setIsLoading] =
         useState<boolean>(false);
 
-    // エラーメッセージ
+    /**
+     * エラーメッセージ
+     */
     const [error, setError] =
         useState<string | null>(null);
 
     /**
-     * DIコンテナからカテゴリ検索Serviceを取得する。
-     * 再レンダーのたびに取得し直さないように
-     * useMemoを使用する。
+     * カテゴリ検索Service
      */
-    const searchService =
+    const service =
         useMemo<ISearchProductByCategoryService>(
             () =>
                 container.get<ISearchProductByCategoryService>(
@@ -39,13 +45,10 @@ export const useSearchProductByCategory = () => {
         );
 
     /**
-     * 商品カテゴリによる検索を実行する。
+     * 商品カテゴリで商品を検索する
      *
      * categoryUuidが空文字の場合は、
-     * カテゴリ未指定として全商品を取得する。
-     *
-     * @param categoryUuid 商品カテゴリUUID
-     * @param showDeletedOnly 削除済み商品のみ取得するか
+     * 全カテゴリの商品を取得する。
      */
     const search = useCallback(
         async (
@@ -56,18 +59,28 @@ export const useSearchProductByCategory = () => {
             setError(null);
 
             try {
-                const result =
-                    await searchService.execute(
+                console.log(
+                    "カテゴリ検索UUID:",
+                    categoryUuid
+                );
+
+                const data =
+                    await service.execute(
                         categoryUuid,
                         showDeletedOnly
                     );
 
-                setProducts(result);
+                setProducts(data);
             } catch (e: unknown) {
                 const message =
                     e instanceof Error
                         ? e.message
-                        : "商品カテゴリによる検索に失敗しました。";
+                        : "カテゴリによる商品検索に失敗しました。";
+
+                console.error(
+                    "カテゴリ商品検索エラー:",
+                    e
+                );
 
                 setError(message);
                 setProducts([]);
@@ -75,7 +88,7 @@ export const useSearchProductByCategory = () => {
                 setIsLoading(false);
             }
         },
-        [searchService]
+        [service]
     );
 
     return {

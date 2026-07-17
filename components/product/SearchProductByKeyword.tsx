@@ -13,9 +13,11 @@ import { AlertCircle } from "lucide-react";
 import { KeywordSearchForm } from "./KeywordSearchForm";
 
 import { ProductCardList } from "./ProductCardList";
+import { CategorySearchForm } from "../product/CategorySearchForm";
 
 import { useSearchProductByKeyword } from "@/components/hooks/useSearchProductByKeyword";
 import { useSearchProductByCategory } from "@/components/hooks/useSearchProductByCategory";
+import { useProductCategories } from "@/components/hooks/useProductCategories";
 
 /**
  * 現在画面に表示する検索結果の種類
@@ -78,6 +80,12 @@ export const ProductSearch = () => {
         search: searchByCategory,
     } = useSearchProductByCategory();
 
+    const {
+        categories,
+        isLoading: isCategoriesLoading,
+        error: categoriesError,
+    } = useProductCategories();
+
     /**
  * 選択中の商品カテゴリ
  *
@@ -132,6 +140,26 @@ export const ProductSearch = () => {
 
         void searchByCategory(
             "",
+            showDeletedOnly
+        );
+    };
+
+    const handleCategoryChange = (
+        selectedCategoryUuid: string
+    ) => {
+        setCategoryUuid(
+            selectedCategoryUuid
+        );
+
+        setDisplayMode("category");
+
+        const valueForApi =
+            selectedCategoryUuid === "all"
+                ? ""
+                : selectedCategoryUuid;
+
+        void searchByCategory(
+            valueForApi,
             showDeletedOnly
         );
     };
@@ -198,6 +226,18 @@ export const ProductSearch = () => {
             <h2 className="mb-6 border-b pb-4 text-center text-2xl font-bold text-foreground">
                 商品検索
             </h2>
+
+            <CategorySearchForm
+                categories={categories}
+                categoryUuid={categoryUuid}
+                isLoading={
+                    isCategoriesLoading ||
+                    isCategoryLoading
+                }
+                onCategoryChange={
+                    handleCategoryChange
+                }
+            />
 
 
             {/* 検索入力エリア */}

@@ -4,6 +4,8 @@ import { IProductCategoryRepository } from "@/interfaces/IProductCategoryReposit
 import { ProductRepository } from "@/infrastructures/ProductRepository";
 import { IEmployeeAccountRepository } from "@/interfaces/IEmployeeAccountRepository";
 import { EmployeeAccountRepository } from "@/infrastructures/EmployeeAccountRepository";
+import { IOrdersRepository } from "@/interfaces/IOrdersRepository";
+import { OrdersRepository } from "@/infrastructures/OrdersRepository";
 import { IRegisterProductService } from "@/interfaces/IRegisterProductService";
 import { RegisterProductService } from "@/services/RegisterProductService";
 import { AdminAuthRepository } from "@/infrastructures/AdminAuthRepository";
@@ -36,6 +38,7 @@ container.bind<IProductRepository>(TYPES.IProductRepository).to(ProductRepositor
 container.bind<IProductCategoryRepository>(TYPES.IProductCategoryRepository).to(ProductCategoryRepository);
 container.bind<IEmployeeAccountRepository>(TYPES.IEmployeeAccountRepository).to(EmployeeAccountRepository);
 container.bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository).to(AdminAuthRepository);
+container.bind<IOrdersRepository>(TYPES.IOrdersRepository).to(OrdersRepository);
 // サービス(ユースケース)の登録
 container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
 container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
