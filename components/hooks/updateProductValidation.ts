@@ -4,6 +4,12 @@ import type { ProductUpdateFieldErrors } from "@/models/ProductUpdate";
 const UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
+const MAX_IMAGE_FILE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+]);
 
 /**
  * 商品識別IDとして使用できるUUID形式かを判定する
@@ -15,7 +21,8 @@ export const isProductUuid = (value: string): boolean =>
  * BP009の商品修正入力値を検証する
  */
 export const validateUpdateProduct = (
-    product: Product
+    product: Product,
+    imageFile: File | null = null
 ): ProductUpdateFieldErrors => {
     const errors: ProductUpdateFieldErrors = {};
     const name = product.name.trim();
@@ -62,6 +69,19 @@ export const validateUpdateProduct = (
     if (!product.productCategory?.categoryUuid) {
         errors.categoryUuid =
             "カテゴリを選択してください。";
+    }
+
+    if (imageFile) {
+        if (imageFile.size <= 0) {
+            errors.image =
+                "画像ファイルが空です。";
+        } else if (imageFile.size > MAX_IMAGE_FILE_SIZE) {
+            errors.image =
+                "画像のファイルサイズは2MB以下にしてください。";
+        } else if (!ALLOWED_IMAGE_TYPES.has(imageFile.type)) {
+            errors.image =
+                "jpg、jpeg、png、webp形式の画像を指定してください。";
+        }
     }
 
     return errors;

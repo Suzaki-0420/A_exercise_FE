@@ -19,7 +19,8 @@ export type ProductUpdateFieldErrors = Partial<
         | "name"
         | "price"
         | "stockQuantity"
-        | "categoryUuid",
+        | "categoryUuid"
+        | "image",
         string
     >
 >;

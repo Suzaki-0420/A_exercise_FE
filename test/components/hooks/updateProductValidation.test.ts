@@ -24,6 +24,15 @@ const createProduct = (
     ...overrides,
 });
 
+const createImageFile = (
+    overrides: Partial<File> = {}
+): File => ({
+    name: "product.png",
+    size: 1024,
+    type: "image/png",
+    ...overrides,
+} as File);
+
 describe("isProductUuid", () => {
     it("サンプルデータのUUID形式を有効と判定する", () => {
         expect(
@@ -110,5 +119,41 @@ describe("validateUpdateProduct", () => {
                 "正しい数量形式で入力してください。",
         });
         expect(decimalResult).toEqual(negativeResult);
+    });
+
+    it("対応形式で2MB以下の画像を有効と判定する", () => {
+        const result = validateUpdateProduct(
+            createProduct(),
+            createImageFile()
+        );
+
+        expect(result.image).toBeUndefined();
+    });
+
+    it("2MBを超える画像では容量エラーを返す", () => {
+        const result = validateUpdateProduct(
+            createProduct(),
+            createImageFile({
+                size: 2 * 1024 * 1024 + 1,
+            })
+        );
+
+        expect(result.image).toBe(
+            "画像のファイルサイズは2MB以下にしてください。"
+        );
+    });
+
+    it("対応していない画像形式では形式エラーを返す", () => {
+        const result = validateUpdateProduct(
+            createProduct(),
+            createImageFile({
+                name: "product.gif",
+                type: "image/gif",
+            })
+        );
+
+        expect(result.image).toBe(
+            "jpg、jpeg、png、webp形式の画像を指定してください。"
+        );
     });
 });
