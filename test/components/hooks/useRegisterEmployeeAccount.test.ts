@@ -2,10 +2,13 @@
 
 import {
     act,
+    cleanup,
     renderHook,
     waitFor,
 } from "@testing-library/react";
-import type { ChangeEvent } from "react";
+import type {
+    ChangeEvent,
+} from "react";
 import {
     afterEach,
     beforeEach,
@@ -20,7 +23,9 @@ import type {
     IRegisterEmployeeAccountService,
 } from
     "@/interfaces/IRegisterEmployeeAccountService";
-import type { EmployeeAccount } from
+import type {
+    EmployeeAccount,
+} from
     "@/models/EmployeeAccount";
 import {
     useRegisterEmployeeAccount,
@@ -40,7 +45,8 @@ const {
     mockContainerGet: vi.fn(),
     mockGetForm: vi.fn(),
     mockValidateAccountName: vi.fn(),
-    mockRegisterEmployeeAccount: vi.fn(),
+    mockRegisterEmployeeAccount:
+        vi.fn(),
 }));
 
 vi.mock("@/di/container", () => ({
@@ -58,6 +64,11 @@ type HookResult = {
     current:
     RegisterEmployeeAccountHook;
 };
+
+type FormFieldName =
+    | "employeeUuid"
+    | "name"
+    | "password";
 
 /**
  * 社員情報を生成する
@@ -80,7 +91,7 @@ const createEmployeeAccount = (
  */
 const changeField = (
     result: HookResult,
-    name: string,
+    name: FormFieldName,
     value: string,
 ): void => {
     act(() => {
@@ -104,7 +115,12 @@ const waitForInitialLoad = async (
 ): Promise<void> => {
     await waitFor(() => {
         expect(
-            result.current.isInitialLoading,
+            mockGetForm,
+        ).toHaveBeenCalledTimes(1);
+
+        expect(
+            result.current
+                .isInitialLoading,
         ).toBe(false);
     });
 };
@@ -168,8 +184,10 @@ describe(
         beforeEach(() => {
             mockContainerGet.mockReset();
             mockGetForm.mockReset();
+
             mockValidateAccountName
                 .mockReset();
+
             mockRegisterEmployeeAccount
                 .mockReset();
 
@@ -183,20 +201,27 @@ describe(
             } as
                 IRegisterEmployeeAccountService;
 
-            mockContainerGet.mockReturnValue(
-                mockService,
-            );
+            mockContainerGet
+                .mockReturnValue(
+                    mockService,
+                );
 
-            mockGetForm.mockResolvedValue([
-                employeeAccount1,
-                employeeAccount2,
-            ]);
+            mockGetForm
+                .mockResolvedValue([
+                    employeeAccount1,
+                    employeeAccount2,
+                ]);
 
             mockValidateAccountName
-                .mockResolvedValue(undefined);
+                .mockResolvedValue(
+                    undefined,
+                );
         });
 
         afterEach(() => {
+            cleanup();
+
+            vi.clearAllTimers();
             vi.useRealTimers();
             vi.restoreAllMocks();
         });
@@ -247,11 +272,17 @@ describe(
                 ).toBe("");
 
                 expect(
+                    result.current
+                        .isInitialLoading,
+                ).toBe(false);
+
+                expect(
                     result.current.isLoading,
                 ).toBe(false);
 
                 expect(
-                    result.current.isConfirmOpen,
+                    result.current
+                        .isConfirmOpen,
                 ).toBe(false);
 
                 expect(
@@ -267,7 +298,7 @@ describe(
         );
 
         it(
-            "初期表示時にRepositoryから未登録社員一覧を取得する",
+            "初期表示時に未登録社員一覧を取得する",
             async () => {
                 const { result } =
                     renderHook(
@@ -290,6 +321,11 @@ describe(
                     employeeAccount1,
                     employeeAccount2,
                 ]);
+
+                expect(
+                    result.current.errors
+                        .system,
+                ).toBeUndefined();
             },
         );
 
@@ -322,8 +358,18 @@ describe(
 
                 expect(
                     result.current
+                        .employeeAccounts,
+                ).toEqual([]);
+
+                expect(
+                    result.current
                         .hasValidationErrors,
                 ).toBe(true);
+
+                expect(
+                    result.current
+                        .isInitialLoading,
+                ).toBe(false);
             },
         );
 
@@ -351,6 +397,11 @@ describe(
                 ).toBe(
                     "社員情報の取得に失敗しました。",
                 );
+
+                expect(
+                    result.current
+                        .employeeAccounts,
+                ).toEqual([]);
 
                 expect(
                     result.current
@@ -425,6 +476,32 @@ describe(
                     result.current
                         .selectedEmployeeName,
                 ).toBe("山田太郎");
+            },
+        );
+
+        it(
+            "存在しない社員識別IDの場合は社員名が空文字になる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                changeField(
+                    result,
+                    "employeeUuid",
+                    "not-found-uuid",
+                );
+
+                expect(
+                    result.current
+                        .selectedEmployeeName,
+                ).toBe("");
             },
         );
 
@@ -585,6 +662,46 @@ describe(
                 expect(
                     mockValidateAccountName,
                 ).not.toHaveBeenCalled();
+            },
+        );
+
+        it(
+            "アカウント名が20文字の場合は重複確認できる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                const accountName =
+                    "a".repeat(20);
+
+                changeField(
+                    result,
+                    "name",
+                    accountName,
+                );
+
+                await act(async () => {
+                    await result.current
+                        .handleAccountNameBlur();
+                });
+
+                expect(
+                    mockValidateAccountName,
+                ).toHaveBeenCalledWith(
+                    accountName,
+                );
+
+                expect(
+                    result.current.errors
+                        .name,
+                ).toBeUndefined();
             },
         );
 
@@ -872,6 +989,54 @@ describe(
                     result.current
                         .isConfirmOpen,
                 ).toBe(false);
+            },
+        );
+
+        it(
+            "パスワードが64文字の場合は確認モーダルを開ける",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                changeField(
+                    result,
+                    "employeeUuid",
+                    "employee-uuid-1",
+                );
+
+                changeField(
+                    result,
+                    "name",
+                    "yamada01",
+                );
+
+                changeField(
+                    result,
+                    "password",
+                    "a".repeat(64),
+                );
+
+                await act(async () => {
+                    await result.current
+                        .openConfirmModal();
+                });
+
+                expect(
+                    result.current.errors
+                        .password,
+                ).toBeUndefined();
+
+                expect(
+                    result.current
+                        .isConfirmOpen,
+                ).toBe(true);
             },
         );
 
@@ -1170,7 +1335,7 @@ describe(
         );
 
         it(
-            "担当者アカウント登録に成功するとフォームを初期化してトーストを表示する",
+            "担当者アカウント登録に成功すると選択した社員を一覧から削除してフォームを初期化する",
             async () => {
                 const { result } =
                     renderHook(
@@ -1436,6 +1601,53 @@ describe(
                 expect(
                     result.current.isLoading,
                 ).toBe(false);
+            },
+        );
+
+        it(
+            "JSON形式のnameエラーをフォームのnameエラーへ変換する",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                const errorMessage =
+                    JSON.stringify({
+                        type: "validation",
+                        errors: {
+                            name:
+                                "アカウント名を確認してください。",
+                        },
+                    });
+
+                mockRegisterEmployeeAccount
+                    .mockRejectedValue(
+                        new Error(
+                            errorMessage,
+                        ),
+                    );
+
+                await openConfirmModal(
+                    result,
+                );
+
+                await act(async () => {
+                    await result.current
+                        .confirmRegisterEmployeeAccount();
+                });
+
+                expect(
+                    result.current.errors,
+                ).toEqual({
+                    name:
+                        "アカウント名を確認してください。",
+                });
             },
         );
 
@@ -1739,6 +1951,12 @@ describe(
                     result,
                 );
 
+                /*
+                 * トースト用タイマーが
+                 * 登録される前に切り替える。
+                 */
+                vi.useFakeTimers();
+
                 mockRegisterEmployeeAccount
                     .mockResolvedValue({
                         accountUuid:
@@ -1765,8 +1983,6 @@ describe(
                         .isToastVisible,
                 ).toBe(true);
 
-                vi.useFakeTimers();
-
                 act(() => {
                     vi.advanceTimersByTime(
                         2999,
@@ -1791,4 +2007,4 @@ describe(
             },
         );
     },
-)
+);
