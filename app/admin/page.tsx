@@ -55,7 +55,7 @@ export default async function AdminMenuPage() {
                         variant="outline"
                         className="h-auto justify-start px-5 py-4"
                     >
-                        <Link href="/admin/account/form">
+                        <Link href="/admin/account/register">
                             アカウント登録
                         </Link>
                     </Button>
