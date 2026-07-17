@@ -36,6 +36,7 @@ type DisplayMode =
  */
 export const ProductSearch = () => {
     const router = useRouter();
+
     /**
      * 検索キーワード
      */

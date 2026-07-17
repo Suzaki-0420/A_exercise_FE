@@ -68,31 +68,29 @@ export const ProductCard = ({
                         個
                     </p>
                 </div>
-                <div className="flex justify-end gap-2">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            onUpdate(product);
-                        }}
-                        className="rounded border border-blue-600 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50"
-                    >
-                        更新
-                    </button>
+                {product.deleteFlg === 0 && (
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onUpdate(product);
+                            }}
+                            className="rounded border border-blue-600 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50"
+                        >
+                            更新
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => {
-                            console.log(
-                                "ProductCard 削除クリック:",
-                                product
-                            );
-                            onDelete(product);
-                        }}
-                        className="rounded border border-red-600 px-4 py-2 font-semibold text-red-600 hover:bg-red-50"
-                    >
-                        削除
-                    </button>
-                </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onDelete(product);
+                            }}
+                            className="rounded border border-red-600 px-4 py-2 font-semibold text-red-600 hover:bg-red-50"
+                        >
+                            削除
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
