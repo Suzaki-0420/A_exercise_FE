@@ -16,6 +16,8 @@ export default defineConfig({
 
             include: [
                 'infrastructures/ProductRepository.ts',
+                'services/RegisterCategoryService.ts',
+                'components/hooks/useRegisterCategory.ts'
             ],
 
             thresholds: {
