@@ -45,7 +45,29 @@ export class EmployeeAccountRepository
             );
         }
 
-        return await response.json();
+        const responseData = await response.json() as {
+            title: string;
+            employees: {
+                employeeUuid: string;
+                employeeName: string;
+            }[];
+        };
+
+        return responseData.employees.map(
+            employee => ({
+                accountUuid: "",
+                name: "",
+                password: "",
+                employee: {
+                    employeeUuid:
+                        employee.employeeUuid,
+                    name:
+                        employee.employeeName,
+                } as NonNullable<
+                    EmployeeAccount["employee"]
+                >,
+            })
+        );
     }
 
     /**
