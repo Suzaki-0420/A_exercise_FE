@@ -83,7 +83,7 @@ export class ProductCategoryRepository
 
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/admin/category/validate?${params.toString()}`;
+            `/proxy-api/category/validate?${params.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -131,7 +131,7 @@ export class ProductCategoryRepository
     ): Promise<ProductCategory> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            "/proxy-api/admin/product-category/register";
+            "/proxy-api/category/register";
 
         const requestBody = {
             name: productCategory.name,

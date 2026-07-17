@@ -46,7 +46,7 @@ export default async function AdminMenuPage() {
                         variant="outline"
                         className="h-auto justify-start px-5 py-4"
                     >
-                        <Link href="/admin/category/add">
+                        <Link href="/admin/category/register">
                             商品カテゴリ登録
                         </Link>
                     </Button>
