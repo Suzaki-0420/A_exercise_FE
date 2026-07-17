@@ -1,6 +1,6 @@
 import { ProductCategory } from "@/models/ProductCategory";
 /**
- * カテゴリ登録Serviceインターフェイス
+ * UC014 カテゴリ登録Serviceインターフェイス
  */
 export interface IRegisterCategoryService {
     /**

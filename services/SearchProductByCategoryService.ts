@@ -5,7 +5,7 @@ import type { Product } from "@/models/Product";
 import { TYPES } from "@/di/types";
 
 /**
- * 商品カテゴリ検索サービスの実装
+ * UC014 商品カテゴリ検索サービスの実装
  */
 @injectable()
 export class SearchProductByCategoryService
