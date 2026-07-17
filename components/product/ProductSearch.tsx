@@ -19,6 +19,7 @@ import { useSearchProductByKeyword } from "@/components/hooks/useSearchProductBy
 import { useSearchProductByCategory } from "@/components/hooks/useSearchProductByCategory";
 import { useProductCategories } from "@/components/hooks/useProductCategories";
 import { useDeleteProduct } from "@/components/hooks/useDeleteProduct";
+import { saveProductForUpdate } from "@/components/product/edit/productUpdateStorage";
 
 /**
  * 現在画面に表示する検索結果の種類
@@ -311,8 +312,10 @@ export const ProductSearch = () => {
     const handleUpdate = (
         product: Product
     ) => {
+        saveProductForUpdate(product);
+
         router.push(
-            `/admin/product/update/${product.productUuid}`
+            `/admin/product/edit/${product.productUuid}`
         );
     };
 
