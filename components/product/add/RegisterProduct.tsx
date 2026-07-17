@@ -16,6 +16,9 @@ export const RegisterProduct = () => {
         isToastVisible,
         hasValidationErrors,
 
+        isCategoriesLoading,
+        categoriesError,
+
         imageFile,
         imagePreviewUrl,
 
@@ -92,8 +95,8 @@ export const RegisterProduct = () => {
                                     onBlur={handleNameBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.name
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 />
 
@@ -130,8 +133,8 @@ export const RegisterProduct = () => {
                                     onBlur={handlePriceBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.price
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 />
 
@@ -174,9 +177,9 @@ export const RegisterProduct = () => {
                                     onBlur={handleStockBlur}
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.stock ||
-                                            errors.quantity
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        errors.quantity
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 />
 
@@ -216,12 +219,12 @@ export const RegisterProduct = () => {
                                     onBlur={
                                         handleCategoryBlur
                                     }
-                                    disabled={isLoading}
+                                    disabled={isLoading || isCategoriesLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.categoryUuid ||
-                                            errors.productCategory ||
-                                            errors.category
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        errors.productCategory ||
+                                        errors.category
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 >
                                     <option value="">
@@ -276,8 +279,8 @@ export const RegisterProduct = () => {
                                     }
                                     disabled={isLoading}
                                     className={`w-full rounded border px-3 py-2 ${errors.image
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 />
 
@@ -321,6 +324,7 @@ export const RegisterProduct = () => {
                                 type="submit"
                                 disabled={
                                     isLoading ||
+                                    isCategoriesLoading ||
                                     hasValidationErrors
                                 }
                                 className="rounded bg-green-600 px-5 py-2 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"

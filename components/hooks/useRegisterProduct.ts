@@ -4,7 +4,7 @@ import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
 import type { IRegisterProductService } from "@/interfaces/IRegisterProductService";
 import type { Product } from "@/models/Product";
-import type { ProductCategory } from "@/models/ProductCategory";
+import { useProductCategories } from "./useProductCategories";
 import {
     type ChangeEvent,
     useCallback,
@@ -72,14 +72,23 @@ export const useRegisterProduct = () => {
     const [formData, setFormData] =
         useState<Product>(createInitialFormData);
 
-    const [categories, setCategories] =
-        useState<ProductCategory[]>([]);
-
     const [errors, setErrors] =
         useState<ProductFormErrors>({});
 
     const [isLoading, setIsLoading] =
         useState(false);
+
+    /**
+    * 商品カテゴリ一覧
+    *
+    * カテゴリ一覧の取得処理は、
+    * 共通のカテゴリ取得Hookへ任せる。
+    */
+    const {
+        categories,
+        isLoading: isCategoriesLoading,
+        error: categoriesError,
+    } = useProductCategories();
 
     /**
      * 選択された画像ファイル
@@ -112,35 +121,38 @@ export const useRegisterProduct = () => {
         useState(false);
 
     /**
-     * 商品カテゴリ一覧を取得する
-     */
+    * カテゴリ一覧取得エラーを
+    * 登録フォームのシステムエラーへ反映する
+    */
     useEffect(() => {
-        const getCategories = async () => {
-            try {
-                const data =
-                    await service.getCategories();
+        setErrors((prev) => {
+            if (categoriesError) {
+                if (
+                    prev.system === categoriesError
+                ) {
+                    return prev;
+                }
 
-                setCategories(data);
-            } catch (error: unknown) {
-                const message =
-                    error instanceof Error
-                        ? error.message
-                        : "商品カテゴリ一覧の取得に失敗しました。";
-
-                console.error(
-                    "商品カテゴリ一覧取得エラー:",
-                    error
-                );
-
-                setErrors((prev) => ({
+                return {
                     ...prev,
-                    system: message,
-                }));
+                    system: categoriesError,
+                };
             }
-        };
 
-        getCategories();
-    }, [service]);
+            /*
+             * カテゴリ取得が成功した場合は、
+             * カテゴリ取得に関するシステムエラーを削除する。
+             */
+            if (!prev.system) {
+                return prev;
+            }
+
+            const newErrors = { ...prev };
+            delete newErrors.system;
+
+            return newErrors;
+        });
+    }, [categoriesError]);
 
     /**
      * トーストを3秒後に閉じる
@@ -873,6 +885,10 @@ export const useRegisterProduct = () => {
         isConfirmOpen,
         isToastVisible,
         hasValidationErrors,
+
+        // カテゴリ一覧取得の通信状態
+        isCategoriesLoading,
+        categoriesError,
 
         imageFile,
         imagePreviewUrl,

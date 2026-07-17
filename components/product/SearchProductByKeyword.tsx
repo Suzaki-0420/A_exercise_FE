@@ -1,77 +1,228 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import {
+    useEffect,
+    useState,
+} from "react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
+import { KeywordSearchForm } from "./KeywordSearchForm";
+
+import { ProductCardList } from "./ProductCardList";
+
 import { useSearchProductByKeyword } from "@/components/hooks/useSearchProductByKeyword";
+import { useSearchProductByCategory } from "@/components/hooks/useSearchProductByCategory";
 
 /**
- * 商品キーワード検索画面
+ * 現在画面に表示する検索結果の種類
+ */
+type DisplayMode =
+    | "category"
+    | "keyword";
+
+/**
+ * 商品検索画面
+ *
+ * ・初回表示時はカテゴリ未指定で全商品を表示する
+ * ・キーワードによる商品検索を行う
+ * ・通常商品と削除済み商品を切り替える
  */
 export const ProductSearch = () => {
+    /**
+     * 検索キーワード
+     */
+    const [keyword, setKeyword] =
+        useState<string>("");
 
-    // 検索キーワード
-    const [keyword, setKeyword] = useState<string>("");
+    /**
+     * 現在表示している検索結果
+     *
+     * 初回表示では全件取得を行うため、
+     * categoryを初期値とする。
+     */
+    const [displayMode, setDisplayMode] =
+        useState<DisplayMode>("category");
 
-    // カスタムフック
-    const {
-        products,
-        isLoading,
-        error,
-        search,
+    /**
+     * 削除済み商品のみ表示するか
+     *
+     * キーワード検索とカテゴリ検索の
+     * 共通条件として画面側で管理する。
+     */
+    const [
         showDeletedOnly,
         setShowDeletedOnly,
+    ] = useState<boolean>(false);
+
+    /**
+     * キーワード検索Hook
+     */
+    const {
+        products: keywordProducts,
+        isLoading: isKeywordLoading,
+        error: keywordError,
+        search: searchByKeyword,
     } = useSearchProductByKeyword();
 
-    // 検索ボタン押下
+    /**
+     * カテゴリ検索Hook
+     */
+    const {
+        products: categoryProducts,
+        isLoading: isCategoryLoading,
+        error: categoryError,
+        search: searchByCategory,
+    } = useSearchProductByCategory();
+
+    /**
+ * 選択中の商品カテゴリ
+ *
+ * "all" はすべてのカテゴリを表す。
+ */
+    const [categoryUuid, setCategoryUuid] =
+        useState<string>("all");
+
+    /**
+     * 初回表示時に全商品を取得する
+     *
+     * categoryUuidに空文字を渡すことで、
+     * カテゴリ未指定の検索を行う。
+     *
+     * showDeletedOnlyはfalseなので、
+     * 通常商品の一覧を取得する。
+     */
+    useEffect(() => {
+        void searchByCategory(
+            "",
+            false
+        );
+    }, [searchByCategory]);
+
+    /**
+     * キーワード検索ボタン押下
+     */
     const handleSearchClick = () => {
-        search(keyword);
+        const trimmedKeyword =
+            keyword.trim();
+
+        if (trimmedKeyword === "") {
+            return;
+        }
+
+        setDisplayMode("keyword");
+
+        void searchByKeyword(
+            trimmedKeyword,
+            showDeletedOnly
+        );
     };
 
+    /**
+     * 全商品表示ボタン押下
+     *
+     * 現在の削除済み表示条件を維持したまま、
+     * カテゴリ未指定の検索を行う。
+     */
+    const handleShowAllClick = () => {
+        setDisplayMode("category");
+
+        void searchByCategory(
+            "",
+            showDeletedOnly
+        );
+    };
+
+    /**
+     * 削除済み表示切り替え
+     *
+     * 現在表示している検索方法を維持したまま、
+     * 通常商品と削除済み商品を切り替える。
+     */
+    const handleDeletedOnlyChange = (
+        checked: boolean
+    ) => {
+        setShowDeletedOnly(checked);
+
+        if (displayMode === "keyword") {
+            const trimmedKeyword =
+                keyword.trim();
+
+            if (trimmedKeyword === "") {
+                return;
+            }
+
+            void searchByKeyword(
+                trimmedKeyword,
+                checked
+            );
+
+            return;
+        }
+
+        void searchByCategory(
+            "",
+            checked
+        );
+    };
+
+    /**
+     * 現在表示する商品一覧
+     */
+    const products =
+        displayMode === "keyword"
+            ? keywordProducts
+            : categoryProducts;
+
+    /**
+     * 現在表示中の検索処理の状態
+     */
+    const isLoading =
+        displayMode === "keyword"
+            ? isKeywordLoading
+            : isCategoryLoading;
+
+    /**
+     * 現在表示中の検索処理のエラー
+     */
+    const error =
+        displayMode === "keyword"
+            ? keywordError
+            : categoryError;
+
     return (
-        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-border">
-            <h2 className="text-2xl font-bold text-foreground mb-6 text-center border-b pb-4">
-                商品キーワード検索
+        <div className="mx-auto max-w-6xl rounded-lg border border-border bg-white p-8 shadow-sm">
+            <h2 className="mb-6 border-b pb-4 text-center text-2xl font-bold text-foreground">
+                商品検索
             </h2>
 
-            {/* 検索入力エリア */}
-            <div className="flex justify-center items-center gap-4 mb-8">
-                <Input
-                    type="text"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder="商品名を入力..."
-                    className="max-w-sm"
-                />
 
-                <Button
-                    onClick={handleSearchClick}
-                    disabled={isLoading}
-                    className="px-8"
-                >
-                    {isLoading ? "検索中..." : "検索"}
-                </Button>
+            {/* 検索入力エリア */}
+            <div className="mb-8 flex flex-wrap items-center justify-center gap-4">
+                <KeywordSearchForm
+                    keyword={keyword}
+                    isLoading={isKeywordLoading}
+                    onKeywordChange={setKeyword}
+                    onSearch={handleSearchClick}
+                />
 
                 <div className="flex items-center space-x-2">
                     <Checkbox
                         id="showDeletedOnly"
                         checked={showDeletedOnly}
-                        onCheckedChange={(checked) =>
-                            setShowDeletedOnly(checked === true)
+                        disabled={isLoading}
+                        onCheckedChange={(
+                            checked
+                        ) =>
+                            handleDeletedOnlyChange(
+                                checked === true
+                            )
                         }
                     />
+
                     <Label htmlFor="showDeletedOnly">
                         削除済み
                     </Label>
@@ -80,95 +231,40 @@ export const ProductSearch = () => {
 
             {/* エラー表示 */}
             {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" />
-                    <span className="font-medium">{error}</span>
+                <div className="mb-6 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-4 text-red-600">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+
+                    <span className="font-medium">
+                        {error}
+                    </span>
                 </div>
             )}
 
-            {/* 検索結果 */}
-            <div>
-                {products.length === 0 && !isLoading && (
-                    <p className="text-center text-muted-foreground py-4">
-                        商品が見つかりません。検索ボタンを押してください。
+            {/* ローディング表示 */}
+            {isLoading && (
+                <p className="py-8 text-center text-muted-foreground">
+                    商品を取得しています...
+                </p>
+            )}
+
+            {/* 商品が存在しない場合 */}
+            {!isLoading &&
+                !error &&
+                products.length === 0 && (
+                    <p className="py-8 text-center text-muted-foreground">
+                        {showDeletedOnly
+                            ? "削除済みの商品が見つかりません。"
+                            : "商品が見つかりません。"}
                     </p>
                 )}
 
-                {products.length > 0 && (
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/50">
-                                    <TableHead className="text-center">
-                                        画像
-                                    </TableHead>
-                                    <TableHead>
-                                        商品名
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        価格
-                                    </TableHead>
-                                    <TableHead className="text-center">
-                                        カテゴリ
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        在庫
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                                {products.map((product) => (
-                                    <TableRow key={product.productUuid}>
-                                        {/* 商品画像 */}
-                                        <TableCell className="text-center">
-                                            {product.imageUrl ? (
-                                                <Image
-                                                    src={product.imageUrl}
-                                                    alt={product.name}
-                                                    width={64}
-                                                    height={64}
-                                                    className="rounded object-cover mx-auto"
-                                                />
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">
-                                                    画像なし
-                                                </span>
-                                            )}
-                                        </TableCell>
-
-                                        {/* 商品名 */}
-                                        <TableCell className="font-medium">
-                                            {product.name}
-                                        </TableCell>
-
-                                        {/* 価格 */}
-                                        <TableCell className="text-right">
-                                            ￥{product.price.toLocaleString()}
-                                        </TableCell>
-
-                                        {/* カテゴリ */}
-                                        <TableCell className="text-center">
-                                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                                                {product.productCategory?.name ?? "-"}
-                                            </span>
-                                        </TableCell>
-
-                                        {/* 在庫 */}
-                                        <TableCell className="text-right">
-                                            {product.productStock?.quantity ?? 0}
-                                            <span className="text-muted-foreground text-xs">
-                                                {" "}個
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+            {/* 商品カード一覧 */}
+            {!isLoading &&
+                products.length > 0 && (
+                    <ProductCardList
+                        products={products}
+                    />
                 )}
-            </div>
         </div>
     );
 };
-

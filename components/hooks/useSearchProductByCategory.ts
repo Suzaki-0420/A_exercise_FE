@@ -1,6 +1,6 @@
 import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
-import { ISearchProductByKeywordService } from "@/interfaces/ISearchProductByKeywordService";
+import { ISearchProductByCategoryService } from "@/interfaces/ISearchProductByCategoryService";
 import { Product } from "@/models/Product";
 import {
     useCallback,
@@ -9,10 +9,9 @@ import {
 } from "react";
 
 /**
- * キーワードによる商品検索の
- * Stateと操作を提供するカスタムフック
+ * 商品カテゴリ検索のStateと操作を提供するカスタムフック
  */
-export const useSearchProductByKeyword = () => {
+export const useSearchProductByCategory = () => {
     // 検索結果
     const [products, setProducts] =
         useState<Product[]>([]);
@@ -26,28 +25,31 @@ export const useSearchProductByKeyword = () => {
         useState<string | null>(null);
 
     /**
-     * DIコンテナからServiceを取得する。
+     * DIコンテナからカテゴリ検索Serviceを取得する。
      * 再レンダーのたびに取得し直さないように
      * useMemoを使用する。
      */
     const searchService =
-        useMemo<ISearchProductByKeywordService>(
+        useMemo<ISearchProductByCategoryService>(
             () =>
-                container.get<ISearchProductByKeywordService>(
-                    TYPES.ISearchProductByKeywordService
+                container.get<ISearchProductByCategoryService>(
+                    TYPES.ISearchProductByCategoryService
                 ),
             []
         );
 
     /**
-     * キーワードで商品を検索する
+     * 商品カテゴリによる検索を実行する。
      *
-     * @param keyword 検索キーワード
+     * categoryUuidが空文字の場合は、
+     * カテゴリ未指定として全商品を取得する。
+     *
+     * @param categoryUuid 商品カテゴリUUID
      * @param showDeletedOnly 削除済み商品のみ取得するか
      */
     const search = useCallback(
         async (
-            keyword: string,
+            categoryUuid: string,
             showDeletedOnly: boolean
         ): Promise<void> => {
             setIsLoading(true);
@@ -56,7 +58,7 @@ export const useSearchProductByKeyword = () => {
             try {
                 const result =
                     await searchService.execute(
-                        keyword,
+                        categoryUuid,
                         showDeletedOnly
                     );
 
@@ -65,7 +67,7 @@ export const useSearchProductByKeyword = () => {
                 const message =
                     e instanceof Error
                         ? e.message
-                        : "商品の検索に失敗しました。";
+                        : "商品カテゴリによる検索に失敗しました。";
 
                 setError(message);
                 setProducts([]);
