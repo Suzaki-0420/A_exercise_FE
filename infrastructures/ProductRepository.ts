@@ -86,37 +86,82 @@ export class ProductRepository implements IProductRepository {
     }
 
     /**
-     * 指定された商品カテゴリに属する商品を取得する
-     */
+ * 指定された商品カテゴリに属する商品を取得する
+ *
+ * categoryUuidが空文字の場合は、
+ * productCategoryUuidをクエリへ追加せず、
+ * 全商品を取得する。
+ */
     public async selectByProductCategoryId(
         categoryUuid: string,
         showDeletedOnly: boolean
     ): Promise<Product[]> {
-        const params = new URLSearchParams({
-            categoryUuid,
-            showDeletedOnly: String(showDeletedOnly),
-        });
+        const params = new URLSearchParams();
 
-        // TODO: 実際のControllerのURLに合わせて修正する
+        /*
+         * カテゴリUUIDが指定されている場合のみ追加する。
+         *
+         * 空文字を
+         * productCategoryUuid=
+         * として送ると、バックエンド側で
+         * Guidへの変換に失敗する。
+         */
+        if (categoryUuid) {
+            params.append(
+                "productCategoryUuid",
+                categoryUuid
+            );
+        }
+
+        params.append(
+            "showDeletedOnly",
+            String(showDeletedOnly)
+        );
+
+        const queryString =
+            params.toString();
+
         const url =
-            `/proxy-api/product/category?${params.toString()}`;
+            queryString
+                ? `/proxy-api/product/category?${queryString}`
+                : "/proxy-api/product/category";
+
+        console.log(
+            "カテゴリ検索URL:",
+            url
+        );
 
         const response = await fetch(url, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            cache: "no-store",
         });
 
         if (!response.ok) {
-            const errorText = await response.clone().text();
+            const errorText =
+                await response.text();
 
-            console.log("========== API ERROR ==========");
-            console.log("search url:", url);
-            console.log("search status:", response.status);
-            console.log("search statusText:", response.statusText);
-            console.log("search error body:", errorText);
-            console.log("===============================");
+            console.error(
+                "========== API ERROR =========="
+            );
+            console.error(
+                "search url:",
+                url
+            );
+            console.error(
+                "search status:",
+                response.status
+            );
+            console.error(
+                "search statusText:",
+                response.statusText
+            );
+            console.error(
+                "search error body:",
+                errorText
+            );
+            console.error(
+                "==============================="
+            );
 
             throw new Error(
                 `商品カテゴリによる検索に失敗しました (Status: ${response.status})`
