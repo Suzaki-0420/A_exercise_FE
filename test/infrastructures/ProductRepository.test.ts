@@ -569,6 +569,53 @@ describe("ProductRepository", () => {
                     })
                 );
         });
+
+        it("queryStringが空の場合はクエリなしURLを使用する", async () => {
+
+            const originalURLSearchParams =
+                global.URLSearchParams;
+
+
+            class EmptyURLSearchParams {
+
+                append() {
+                    // 何もしない
+                }
+
+                toString() {
+                    return "";
+                }
+            }
+
+
+            global.URLSearchParams =
+                EmptyURLSearchParams as unknown as typeof URLSearchParams;
+
+            fetchMock.mockResolvedValue(
+                createResponse([])
+            );
+
+
+            await repository.selectByProductCategoryId(
+                "",
+                false
+            );
+
+
+            expect(fetchMock)
+                .toHaveBeenCalledWith(
+                    "/proxy-api/product/category",
+                    expect.objectContaining({
+                        method: "GET",
+                        cache: "no-store",
+                    })
+                );
+
+
+            global.URLSearchParams =
+                originalURLSearchParams;
+
+        });
     });
 
     describe("existsByName", () => {
@@ -1048,23 +1095,27 @@ describe("ProductRepository", () => {
         });
 
         it("PUTで正しいURLへリクエストする", async () => {
+
             const product =
                 createProduct({
                     productUuid:
                         "product-uuid-123",
                 });
 
+
             fetchMock.mockResolvedValue(
                 createResponse({})
             );
+
 
             await repository.updateById(
                 product
             );
 
+
             expect(fetchMock)
                 .toHaveBeenCalledWith(
-                    `/proxy-api/admin/product/${product.productUuid}`,
+                    `/proxy-api/product/${product.productUuid}`,
                     expect.objectContaining({
                         method: "PUT",
                     })
@@ -1364,7 +1415,7 @@ describe("ProductRepository", () => {
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
-                    "/proxy-api/admin/product/product-uuid",
+                    "/proxy-api/product/delete/product-uuid",
                     {
                         method: "DELETE",
                         headers: {
