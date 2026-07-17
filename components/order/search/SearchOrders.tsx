@@ -6,47 +6,6 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 
 /**
- * 日時を画面表示用に変換する
- */
-const formatOrderDate = (
-    orderDate: string
-): string => {
-    const date = new Date(orderDate);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return orderDate;
-    }
-
-    return date.toLocaleString(
-        "ja-JP",
-        {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-        }
-    );
-};
-
-/**
- * 金額を画面表示用に変換する
- */
-const formatAmount = (
-    amount: number
-): string => {
-    return new Intl.NumberFormat(
-        "ja-JP"
-    ).format(amount);
-};
-
-/**
  * 購入履歴検索コンポーネント
  */
 export const SearchOrders = () => {
@@ -132,10 +91,12 @@ export const SearchOrders = () => {
                                         ? "order-date-error"
                                         : undefined
                                 }
-                                className={`w-full rounded border px-3 py-2 ${errors.orderDate
+                                className={
+                                    `w-full rounded border px-3 py-2 ${errors.orderDate
                                         ? "border-red-500"
                                         : "border-gray-300"
-                                    }`}
+                                    }`
+                                }
                             />
 
                             {errors.orderDate && (
@@ -188,11 +149,13 @@ export const SearchOrders = () => {
                                         ? "customer-account-name-error"
                                         : undefined
                                 }
-                                className={`w-full rounded border px-3 py-2 ${errors
+                                className={
+                                    `w-full rounded border px-3 py-2 ${errors
                                         .customerAccountName
                                         ? "border-red-500"
                                         : "border-gray-300"
-                                    }`}
+                                    }`
+                                }
                             />
 
                             <div className="mt-1 flex justify-between gap-4">
@@ -234,7 +197,7 @@ export const SearchOrders = () => {
                         </p>
                     )}
 
-                    {/* ボタン */}
+                    {/* 操作ボタン */}
                     <div className="mt-8 flex justify-center gap-6">
                         <button
                             type="button"
@@ -281,14 +244,14 @@ export const SearchOrders = () => {
 
                     {orders.length > 0 && (
                         <div className="overflow-x-auto rounded-lg border border-gray-200">
-                            <table className="w-full min-w-[1000px] border-collapse text-left">
+                            <table className="w-full min-w-[900px] border-collapse text-left">
                                 <thead className="bg-gray-100">
                                     <tr>
-                                        <th className="border-b px-4 py-3">
+                                        <th className="whitespace-nowrap border-b px-4 py-3">
                                             購入日時
                                         </th>
 
-                                        <th className="border-b px-4 py-3">
+                                        <th className="whitespace-nowrap border-b px-4 py-3">
                                             顧客アカウント名
                                         </th>
 
@@ -296,15 +259,11 @@ export const SearchOrders = () => {
                                             注文内容
                                         </th>
 
-                                        <th className="border-b px-4 py-3 text-right">
-                                            合計金額
-                                        </th>
-
-                                        <th className="border-b px-4 py-3">
+                                        <th className="whitespace-nowrap border-b px-4 py-3">
                                             注文ステータス
                                         </th>
 
-                                        <th className="border-b px-4 py-3 text-center">
+                                        <th className="whitespace-nowrap border-b px-4 py-3 text-center">
                                             ステータス更新
                                         </th>
                                     </tr>
@@ -319,75 +278,46 @@ export const SearchOrders = () => {
                                                 }
                                                 className="odd:bg-white even:bg-gray-50"
                                             >
-                                                <td className="border-b px-4 py-3">
-                                                    {formatOrderDate(
-                                                        order.orderDate
-                                                    )}
-                                                </td>
-
-                                                <td className="border-b px-4 py-3">
+                                                {/* 購入日時 */}
+                                                <td className="whitespace-nowrap border-b px-4 py-3">
                                                     {
-                                                        order
-                                                            .customer
-                                                            ?.username ??
+                                                        order.orderDate ||
                                                         "-"
                                                     }
                                                 </td>
 
-                                                <td className="border-b px-4 py-3">
-                                                    {order
-                                                        .ordersDetails
-                                                        ?.length >
-                                                        0 ? (
-                                                        <ul className="space-y-1">
-                                                            {order.ordersDetails.map(
-                                                                (
-                                                                    detail,
-                                                                    index
-                                                                ) => (
-                                                                    <li
-                                                                        key={
-                                                                            detail.id ??
-                                                                            index
-                                                                        }
-                                                                    >
-                                                                        {detail
-                                                                            .product
-                                                                            ?.name ??
-                                                                            "商品名不明"}
-                                                                        {" × "}
-                                                                        {
-                                                                            detail.count
-                                                                        }
-                                                                    </li>
-                                                                )
-                                                            )}
-                                                        </ul>
-                                                    ) : (
-                                                        "-"
-                                                    )}
-                                                </td>
-
-                                                <td className="border-b px-4 py-3 text-right">
-                                                    ¥
-                                                    {formatAmount(
-                                                        order.amountTotal
-                                                    )}
-                                                </td>
-
+                                                {/* 顧客アカウント名 */}
                                                 <td className="border-b px-4 py-3">
                                                     {
-                                                        order
-                                                            .orderStatus
-                                                            ?.name ??
+                                                        order.customerAccountName ||
                                                         "-"
                                                     }
                                                 </td>
 
+                                                {/* 注文内容 */}
+                                                <td className="border-b px-4 py-3">
+                                                    {
+                                                        order.orderContent ||
+                                                        "-"
+                                                    }
+                                                </td>
+
+                                                {/* 注文ステータス */}
+                                                <td className="whitespace-nowrap border-b px-4 py-3">
+                                                    {
+                                                        order.orderStatus ||
+                                                        "-"
+                                                    }
+                                                </td>
+
+                                                {/* ステータス更新 */}
                                                 <td className="border-b px-4 py-3 text-center">
                                                     <Link
-                                                        href={`/admin/order/status/update/${order.orderUuid}`}
-                                                        className="inline-block rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                                        href={
+                                                            order.statusUpdateUrl ||
+                                                            `/admin/order/status/update/${order.orderUuid}`
+                                                        }
+                                                        className="inline-block whitespace-nowrap rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
                                                     >
                                                         更新
                                                     </Link>

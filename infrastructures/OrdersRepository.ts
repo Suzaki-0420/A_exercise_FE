@@ -1,7 +1,10 @@
 import type { IOrdersRepository } from "@/interfaces/IOrdersRepository";
 import type { Orders } from "@/models/Orders";
 import { injectable } from "inversify";
-
+import type {
+    OrderSearchItem,
+    SearchOrdersResponse,
+} from "@/models/OrderSearchItem";
 /**
  * 注文Repository実装クラス
  */
@@ -12,7 +15,8 @@ export class OrdersRepository
     /**
      * すべての購入履歴を取得する
      */
-    public async findAll(): Promise<Orders[]> {
+    public async findAll():
+        Promise<OrderSearchItem[]> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url = "/proxy-api/order/search";
 
@@ -44,7 +48,10 @@ export class OrdersRepository
             );
         }
 
-        return await response.json();
+        const responseData =
+            await response.json() as SearchOrdersResponse;
+
+        return responseData.orderList;
     }
 
     /**
@@ -53,7 +60,7 @@ export class OrdersRepository
     public async search(
         orderDate: string,
         customerAccountName: string
-    ): Promise<Orders[]> {
+    ): Promise<OrderSearchItem[]> {
         const params = new URLSearchParams();
 
         /*
@@ -117,7 +124,10 @@ export class OrdersRepository
             );
         }
 
-        return await response.json();
+        const responseData =
+            await response.json() as SearchOrdersResponse;
+
+        return responseData.orderList;
     }
 
     /**

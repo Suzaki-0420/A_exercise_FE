@@ -1,5 +1,6 @@
 import type { Orders } from "@/models/Orders";
-
+import type { OrderSearchItem } from
+    "@/models/OrderSearchItem";
 /**
  * 注文Repositoryインターフェイス
  */
@@ -8,7 +9,7 @@ export interface IOrdersRepository {
     /**
      * すべての購入履歴を取得する
      */
-    findAll(): Promise<Orders[]>;
+    findAll(): Promise<OrderSearchItem[]>;
 
     /**
      * 条件を指定して購入履歴を検索する
@@ -16,7 +17,7 @@ export interface IOrdersRepository {
     search(
         orderDate: string,
         customerAccountName: string
-    ): Promise<Orders[]>;
+    ): Promise<OrderSearchItem[]>;
 
     /**
      * 指定された注文UUIDの注文情報を取得する

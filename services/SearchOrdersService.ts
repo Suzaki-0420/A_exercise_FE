@@ -8,8 +8,8 @@ import type { IOrdersRepository } from
     "@/interfaces/IOrdersRepository";
 import type { ISearchOrdersService } from
     "@/interfaces/ISearchOrdersService";
-import type { Orders } from
-    "@/models/Orders";
+import type { OrderSearchItem } from
+    "@/models/OrderSearchItem";
 
 /**
  * 購入履歴検索Service
@@ -18,9 +18,6 @@ import type { Orders } from
 export class SearchOrdersService
     implements ISearchOrdersService {
 
-    /**
-     * コンストラクタ
-     */
     public constructor(
         @inject(TYPES.IOrdersRepository)
         private readonly ordersRepository:
@@ -31,7 +28,7 @@ export class SearchOrdersService
      * すべての購入履歴を取得する
      */
     public async findAll():
-        Promise<Orders[]> {
+        Promise<OrderSearchItem[]> {
 
         return await this.ordersRepository
             .findAll();
@@ -43,7 +40,7 @@ export class SearchOrdersService
     public async searchOrders(
         orderDate: string,
         customerAccountName: string
-    ): Promise<Orders[]> {
+    ): Promise<OrderSearchItem[]> {
 
         return await this.ordersRepository
             .search(

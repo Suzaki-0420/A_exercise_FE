@@ -119,9 +119,9 @@ export const RegisterEmployeeAccount =
                                                 )
                                             }
                                             className={`w-full rounded border px-3 py-2 ${errors
-                                                    .employeeUuid
-                                                    ? "border-red-500"
-                                                    : "border-gray-300"
+                                                .employeeUuid
+                                                ? "border-red-500"
+                                                : "border-gray-300"
                                                 }`}
                                         >
                                             <option value="">
@@ -211,8 +211,8 @@ export const RegisterEmployeeAccount =
                                                 )
                                             }
                                             className={`w-full rounded border px-3 py-2 ${errors.name
-                                                    ? "border-red-500"
-                                                    : "border-gray-300"
+                                                ? "border-red-500"
+                                                : "border-gray-300"
                                                 }`}
                                         />
 
@@ -277,9 +277,9 @@ export const RegisterEmployeeAccount =
                                                 )
                                             }
                                             className={`w-full rounded border px-3 py-2 ${errors
-                                                    .password
-                                                    ? "border-red-500"
-                                                    : "border-gray-300"
+                                                .password
+                                                ? "border-red-500"
+                                                : "border-gray-300"
                                                 }`}
                                         />
 
@@ -291,59 +291,6 @@ export const RegisterEmployeeAccount =
                                                 {
                                                     errors
                                                         .password
-                                                }
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* 確認用パスワード */}
-                                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                                    <label
-                                        htmlFor="confirmPassword"
-                                        className="pt-2 text-right"
-                                    >
-                                        パスワード確認
-                                    </label>
-
-                                    <div>
-                                        <input
-                                            id="confirmPassword"
-                                            name="confirmPassword"
-                                            type="password"
-                                            value={
-                                                formData
-                                                    .confirmPassword
-                                            }
-                                            maxLength={64}
-                                            onChange={
-                                                handleChange
-                                            }
-                                            disabled={
-                                                isLoading
-                                            }
-                                            autoComplete="new-password"
-                                            aria-invalid={
-                                                Boolean(
-                                                    errors
-                                                        .confirmPassword
-                                                )
-                                            }
-                                            className={`w-full rounded border px-3 py-2 ${errors
-                                                    .confirmPassword
-                                                    ? "border-red-500"
-                                                    : "border-gray-300"
-                                                }`}
-                                        />
-
-                                        {errors.confirmPassword && (
-                                            <p
-                                                role="alert"
-                                                className="mt-1 text-sm text-red-600"
-                                            >
-                                                {
-                                                    errors
-                                                        .confirmPassword
                                                 }
                                             </p>
                                         )}

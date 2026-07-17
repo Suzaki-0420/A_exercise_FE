@@ -4,7 +4,6 @@ import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
 import type { ISearchOrdersService } from
     "@/interfaces/ISearchOrdersService";
-import type { Orders } from "@/models/Orders";
 import {
     type ChangeEvent,
     useCallback,
@@ -12,6 +11,8 @@ import {
     useMemo,
     useState,
 } from "react";
+import type { OrderSearchItem } from
+    "@/models/OrderSearchItem";
 
 /**
  * 購入履歴検索条件
@@ -76,7 +77,7 @@ export const useSearchOrders = () => {
         );
 
     const [orders, setOrders] =
-        useState<Orders[]>([]);
+        useState<OrderSearchItem[]>([]);
 
     const [errors, setErrors] =
         useState<SearchOrdersErrors>({});

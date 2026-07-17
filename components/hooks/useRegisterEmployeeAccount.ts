@@ -21,7 +21,6 @@ type EmployeeAccountFormData = {
     employeeUuid: string;
     name: string;
     password: string;
-    confirmPassword: string;
 };
 
 /**
@@ -44,7 +43,6 @@ const createInitialFormData =
         employeeUuid: "",
         name: "",
         password: "",
-        confirmPassword: "",
     });
 
 /**
@@ -377,43 +375,6 @@ export const useRegisterEmployeeAccount =
             ]);
 
         /**
-         * 確認用パスワードを検証する
-         */
-        const validateConfirmPassword =
-            useCallback((): boolean => {
-                if (!formData.confirmPassword) {
-                    setFieldError(
-                        "confirmPassword",
-                        "確認用パスワードを入力してください。"
-                    );
-
-                    return false;
-                }
-
-                if (
-                    formData.password !==
-                    formData.confirmPassword
-                ) {
-                    setFieldError(
-                        "confirmPassword",
-                        "パスワードが一致しません。"
-                    );
-
-                    return false;
-                }
-
-                setFieldError(
-                    "confirmPassword"
-                );
-
-                return true;
-            }, [
-                formData.password,
-                formData.confirmPassword,
-                setFieldError,
-            ]);
-
-        /**
          * 入力値変更処理
          */
         const handleChange = useCallback(
@@ -475,14 +436,10 @@ export const useRegisterEmployeeAccount =
                 const isPasswordValid =
                     validatePassword();
 
-                const isConfirmPasswordValid =
-                    validateConfirmPassword();
-
                 if (
                     !isEmployeeValid ||
                     !isAccountNameValid ||
-                    !isPasswordValid ||
-                    !isConfirmPasswordValid
+                    !isPasswordValid
                 ) {
                     return;
                 }
@@ -499,7 +456,6 @@ export const useRegisterEmployeeAccount =
                 validateEmployee,
                 validateAccountName,
                 validatePassword,
-                validateConfirmPassword,
                 setFieldError,
             ]);
 
