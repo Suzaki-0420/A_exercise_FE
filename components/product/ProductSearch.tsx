@@ -176,6 +176,14 @@ export const ProductSearch = () => {
             false
         );
     }, [searchByCategory]);
+    /**
+ * 検索方法タブ切り替え
+ */
+    const handleTabChange = (
+        mode: DisplayMode
+    ) => {
+        setDisplayMode(mode);
+    };
 
     /**
      * キーワード検索ボタン押下
@@ -325,67 +333,155 @@ export const ProductSearch = () => {
                 商品検索
             </h2>
 
-            <CategorySearchForm
-                categories={categories}
-                categoryUuid={categoryUuid}
-                isLoading={
-                    isCategoriesLoading ||
-                    isCategoryLoading
-                }
-                onCategoryChange={
-                    handleCategoryChange
-                }
-            />
+            {/* 検索方法タブ */}
+            <div
+                className="mb-6 grid grid-cols-2 border-b"
+                role="tablist"
+                aria-label="商品検索方法"
+            >
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={
+                        displayMode === "category"
+                    }
+                    onClick={() => {
+                        handleTabChange("category");
+                    }}
+                    className={`rounded-t-md border px-4 py-3 font-semibold transition-colors ${displayMode === "category"
+                        ? "border-green-600 bg-green-600 text-white"
+                        : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                >
+                    カテゴリ検索
+                </button>
+
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={
+                        displayMode === "keyword"
+                    }
+                    onClick={() => {
+                        handleTabChange("keyword");
+                    }}
+                    className={`rounded-t-md border px-4 py-3 font-semibold transition-colors ${displayMode === "keyword"
+                        ? "border-green-600 bg-green-600 text-white"
+                        : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                >
+                    キーワード検索
+                </button>
+            </div>
 
 
-            {/* 検索入力エリア */}
-            <div className="mb-8 flex flex-wrap items-center justify-center gap-4">
-                <KeywordSearchForm
-                    keyword={keyword}
-                    isLoading={isKeywordLoading}
-                    onKeywordChange={setKeyword}
-                    onSearch={handleSearchClick}
-                />
-
-                <div className="flex flex-col gap-1">
-                    <div
-                        className={`flex items-center space-x-2 ${isDeletedCheckboxDisabled
-                            ? "opacity-50"
-                            : ""
-                            }`}
-                    >
-                        <Checkbox
-                            id="showDeletedOnly"
-                            checked={showDeletedOnly}
-                            disabled={
-                                isDeletedCheckboxDisabled
+            {/* 検索条件入力エリア */}
+            <div className="mb-8">
+                {displayMode === "category" ? (
+                    <div className="space-y-4">
+                        <CategorySearchForm
+                            categories={categories}
+                            categoryUuid={categoryUuid}
+                            isLoading={
+                                isCategoriesLoading ||
+                                isCategoryLoading
                             }
-                            onCheckedChange={(checked) =>
-                                handleDeletedOnlyChange(
-                                    checked === true
-                                )
+                            onCategoryChange={
+                                handleCategoryChange
                             }
                         />
 
-                        <Label
-                            htmlFor="showDeletedOnly"
-                            className={
-                                isDeletedCheckboxDisabled
-                                    ? "cursor-not-allowed"
-                                    : "cursor-pointer"
-                            }
-                        >
-                            削除済み
-                        </Label>
-                    </div>
+                        <div className="flex justify-center">
+                            <div className="flex flex-col gap-1">
+                                <div
+                                    className={`flex items-center space-x-2 ${isDeletedCheckboxDisabled
+                                        ? "opacity-50"
+                                        : ""
+                                        }`}
+                                >
+                                    <Checkbox
+                                        id="showDeletedOnlyCategory"
+                                        checked={
+                                            showDeletedOnly
+                                        }
+                                        disabled={
+                                            isDeletedCheckboxDisabled
+                                        }
+                                        onCheckedChange={(
+                                            checked
+                                        ) =>
+                                            handleDeletedOnlyChange(
+                                                checked === true
+                                            )
+                                        }
+                                    />
 
-                    {displayMode === "category" &&
-                        categoryUuid === "all" && (
-                            <p className="pl-6 text-xs text-muted-foreground">
-                                カテゴリ選択またはキーワード入力すると利用できます
-                            </p>
-                        )}
-                </div>
+                                    <Label
+                                        htmlFor="showDeletedOnlyCategory"
+                                        className={
+                                            isDeletedCheckboxDisabled
+                                                ? "cursor-not-allowed"
+                                                : "cursor-pointer"
+                                        }
+                                    >
+                                        削除済み
+                                    </Label>
+                                </div>
+
+                                {categoryUuid === "all" && (
+                                    <p className="pl-6 text-xs text-muted-foreground">
+                                        カテゴリを選択すると利用できます
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="flex justify-center">
+                            <KeywordSearchForm
+                                keyword={keyword}
+                                isLoading={
+                                    isKeywordLoading
+                                }
+                                onKeywordChange={
+                                    setKeyword
+                                }
+                                onSearch={
+                                    handleSearchClick
+                                }
+                            />
+                        </div>
+
+                        <div className="flex justify-center">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="showDeletedOnlyKeyword"
+                                    checked={
+                                        showDeletedOnly
+                                    }
+                                    disabled={
+                                        isKeywordLoading
+                                    }
+                                    onCheckedChange={(
+                                        checked
+                                    ) =>
+                                        handleDeletedOnlyChange(
+                                            checked === true
+                                        )
+                                    }
+                                />
+
+                                <Label
+                                    htmlFor="showDeletedOnlyKeyword"
+                                    className="cursor-pointer"
+                                >
+                                    削除済み
+                                </Label>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* エラー表示 */}

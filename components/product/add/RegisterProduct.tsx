@@ -415,17 +415,38 @@ export const RegisterProduct = () => {
                                     商品画像
                                 </dt>
 
-                                <dd>
+                                <dd className="space-y-3">
+                                    <label
+                                        htmlFor="productImage"
+                                        className="inline-flex cursor-pointer items-center rounded-md border border-blue-600 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50"
+                                    >
+                                        画像を選択
+                                    </label>
+
+                                    <input
+                                        id="productImage"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                    />
+
                                     {imagePreviewUrl ? (
-                                        <img
-                                            src={
-                                                imagePreviewUrl
-                                            }
-                                            alt="登録する商品画像"
-                                            className="h-24 w-24 rounded border border-gray-300 object-contain"
-                                        />
+                                        <div className="space-y-1">
+                                            <img
+                                                src={imagePreviewUrl}
+                                                alt="登録する商品画像"
+                                                className="h-24 w-24 rounded border border-gray-300 object-contain"
+                                            />
+
+                                            <p className="text-sm text-muted-foreground">
+                                                選択中の画像
+                                            </p>
+                                        </div>
                                     ) : (
-                                        "未選択"
+                                        <p className="text-sm text-muted-foreground">
+                                            画像は選択されていません
+                                        </p>
                                     )}
                                 </dd>
                             </div>
