@@ -1115,14 +1115,16 @@ describe("ProductRepository", () => {
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
-                    `/proxy-api/product/${product.productUuid}`,
-                    expect.objectContaining({
+                    `/proxy-api/product/edit/${product.productUuid}`,
+                    {
                         method: "PUT",
-                    })
+                        credentials: "include",
+                        body: expect.any(FormData),
+                    }
                 );
         });
 
-        it("request bodyに商品情報を含める", async () => {
+        it("FormDataに商品情報を含める", async () => {
             const product =
                 createProduct();
 
@@ -1137,16 +1139,42 @@ describe("ProductRepository", () => {
             const [, options] =
                 fetchMock.mock.calls[0];
 
-            expect(options.body)
-                .toBeDefined();
+            const body = options.body as FormData;
 
-            expect(options.body)
-                .toContain(product.name);
+            expect(body.get("Name"))
+                .toBe(product.name);
+            expect(body.get("Price"))
+                .toBe(String(product.price));
+            expect(body.get("StockQuantity"))
+                .toBe(String(product.productStock?.quantity));
+            expect(body.get("CategoryUuid"))
+                .toBe(product.productCategory?.categoryUuid);
+            expect(body.has("Image"))
+                .toBe(false);
+        });
 
-            expect(options.body)
-                .toContain(
-                    String(product.price)
-                );
+        it("選択した画像をImageとしてFormDataへ追加する", async () => {
+            const imageFile = new File(
+                ["image-data"],
+                "product.png",
+                { type: "image/png" }
+            );
+
+            fetchMock.mockResolvedValue(
+                createResponse({})
+            );
+
+            await repository.updateById(
+                createProduct(),
+                imageFile
+            );
+
+            const [, options] =
+                fetchMock.mock.calls[0];
+            const body = options.body as FormData;
+
+            expect(body.get("Image"))
+                .toBe(imageFile);
         });
 
         it("validationエラーの場合はvalidation内容をthrowする", async () => {
@@ -1264,7 +1292,7 @@ describe("ProductRepository", () => {
         });
 
 
-        it("在庫情報がない場合はstockQuantityを0で送信する", async () => {
+        it("在庫情報がない場合はStockQuantityを0で送信する", async () => {
             const product = createProduct({
                 productStock: undefined,
             });
@@ -1278,14 +1306,13 @@ describe("ProductRepository", () => {
             const [, options] =
                 fetchMock.mock.calls[0];
 
-            const body =
-                JSON.parse(options.body);
+            const body = options.body as FormData;
 
-            expect(body.stockQuantity)
-                .toBe(0);
+            expect(body.get("StockQuantity"))
+                .toBe("0");
         });
 
-        it("カテゴリ情報がない場合はproductCategoryUuidをnullで送信する", async () => {
+        it("カテゴリ情報がない場合はCategoryUuidを空文字で送信する", async () => {
             const product = createProduct({
                 productCategory: undefined,
             });
@@ -1299,11 +1326,10 @@ describe("ProductRepository", () => {
             const [, options] =
                 fetchMock.mock.calls[0];
 
-            const body =
-                JSON.parse(options.body);
+            const body = options.body as FormData;
 
-            expect(body.productCategoryUuid)
-                .toBeNull();
+            expect(body.get("CategoryUuid"))
+                .toBe("");
         });
 
         it("validation errorsが文字列の場合もthrowする", async () => {

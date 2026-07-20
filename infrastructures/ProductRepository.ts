@@ -371,28 +371,35 @@ export class ProductRepository implements IProductRepository {
      * 商品を更新する
      */
     public async updateById(
-        product: Product
+        product: Product,
+        imageFile: File | null = null
     ): Promise<boolean> {
-        // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/product/${product.productUuid}`;
+            `/proxy-api/product/edit/${encodeURIComponent(product.productUuid)}`;
 
-        const requestBody = {
-            name: product.name,
-            price: product.price,
-            imageUrl: product.imageUrl,
-            stockQuantity:
-                product.productStock?.quantity ?? 0,
-            productCategoryUuid:
-                product.productCategory?.categoryUuid ?? null,
-        };
+        const requestBody = new FormData();
+        requestBody.append("Name", product.name);
+        requestBody.append(
+            "Price",
+            String(product.price)
+        );
+        requestBody.append(
+            "StockQuantity",
+            String(product.productStock?.quantity ?? 0)
+        );
+        requestBody.append(
+            "CategoryUuid",
+            product.productCategory?.categoryUuid ?? ""
+        );
+
+        if (imageFile) {
+            requestBody.append("Image", imageFile);
+        }
 
         const response = await fetch(url, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
+            credentials: "include",
+            body: requestBody,
         });
 
         const responseText = await response.clone().text();
