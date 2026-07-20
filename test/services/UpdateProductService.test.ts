@@ -4,7 +4,7 @@ import type { Product } from "@/models/Product";
 import type { ProductCategory } from "@/models/ProductCategory";
 import { ProductUpdateError } from "@/models/ProductUpdate";
 import { UpdateProductService } from "@/services/UpdateProductService";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const category: ProductCategory = {
     categoryUuid: "e50d978b-b73d-4afb-8e85-ace9cf1e12a7",
@@ -78,6 +78,29 @@ describe("UpdateProductService", () => {
             imageUrl: product.imageUrl,
             updated: true,
         });
+    });
+
+    it("選択した画像をRepositoryへ渡す", async () => {
+        const repository = createProductRepository();
+        const updateById = vi.spyOn(
+            repository,
+            "updateById"
+        );
+        const service = new UpdateProductService(
+            repository,
+            createCategoryRepository()
+        );
+        const imageFile = {
+            name: "product.png",
+            type: "image/png",
+        } as File;
+
+        await service.updateProduct(product, imageFile);
+
+        expect(updateById).toHaveBeenCalledWith(
+            product,
+            imageFile
+        );
     });
 
     it("更新対象が存在しない場合は404エラーを返す", async () => {

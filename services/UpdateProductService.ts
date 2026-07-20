@@ -35,10 +35,14 @@ export class UpdateProductService
      * 商品を修正する
      */
     public async updateProduct(
-        product: Product
+        product: Product,
+        imageFile: File | null = null
     ): Promise<ProductUpdateResult> {
         const updated =
-            await this.productRepository.updateById(product);
+            await this.productRepository.updateById(
+                product,
+                imageFile
+            );
 
         if (!updated) {
             throw new ProductUpdateError(

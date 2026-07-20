@@ -48,7 +48,7 @@ export interface IProductRepository {
     /**
      * 商品を更新する
      */
-    updateById(product: Product): Promise<boolean>;
+    updateById(product: Product,imageFile?: File | null): Promise<boolean>;
 
     /**
      * 商品を削除する

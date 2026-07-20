@@ -15,9 +15,11 @@ export interface IUpdateProductService {
      * 商品を修正する
      *
      * @param product 修正する商品
+     * @param imageFile 差し替える画像。変更しない場合はnull
      * @returns 商品修正結果
      */
     updateProduct(
-        product: Product
+        product: Product,
+        imageFile?: File | null
     ): Promise<ProductUpdateResult>;
 }
