@@ -21,7 +21,9 @@ export default defineConfig({
                 'services/SearchProductByCategoryService.ts',
                 'services/SearchProductByKeywordService.ts',
                 'services/SearchOrdersService.ts',
+                'services/UpdateProductService.ts',
                 'services/RegisterEmployeeAccountService.ts',
+
                 'components/hooks/useRegisterCategory.ts',
                 'components/hooks/useSearchOrders.ts',
                 'components/hooks/useRegisterEmployeeAccount.ts',
@@ -29,6 +31,13 @@ export default defineConfig({
                 'components/hooks/useDeleteProduct.ts',
                 'components/hooks/useSearchProductByCategory.ts',
                 'components/hooks/useSearchProductByKeyword.ts',
+                'components/hooks/useAdminLogin.ts',
+                'components/hooks/useAdminLogout.ts',
+                'components/hooks/useProductCategories.ts',
+                'components/hooks/useUpdateOrderStatus.ts',
+                'components/hooks/useUpdateProduct.ts',
+                'components/hooks/updateProductValidation.ts',
+
                 'infrastructures/AdminAuthRepository.ts',
                 'infrastructures/EmployeeAccountRepository.ts',
                 'infrastructures/ProductCategoryRepository.ts',
