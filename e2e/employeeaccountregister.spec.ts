@@ -287,12 +287,48 @@ test.describe(
 
                 await expect(
                     page.getByText(
-                        "アカウント名は5〜20文字で入力してください。",
+                        "アカウント名は5文字以上20文字以内で入力してください。",
                         {
                             exact: true,
                         }
                     )
                 ).toBeVisible();
+            }
+        );
+
+        test(
+            "アカウント名は20文字を超えて入力できない",
+            async ({ page }) => {
+                const {
+                    accountNameInput,
+                } = getFormElements(page);
+
+                /*
+                 * 22文字入力する
+                 */
+                await accountNameInput.fill(
+                    "abcdefghijklmnopqrstuv"
+                );
+
+                /*
+                 * maxLength=20 のため、
+                 * 20文字までしか入力されないことを確認する
+                 */
+                await expect(
+                    accountNameInput
+                ).toHaveValue(
+                    "abcdefghijklmnopqrst"
+                );
+
+                /*
+                 * 入力欄の最大文字数設定も確認する
+                 */
+                await expect(
+                    accountNameInput
+                ).toHaveAttribute(
+                    "maxlength",
+                    "20"
+                );
             }
         );
 
@@ -360,12 +396,48 @@ test.describe(
 
                 await expect(
                     page.getByText(
-                        "パスワードは5〜20文字で入力してください。",
+                        "パスワードは5文字以上20文字以内で入力してください。",
                         {
                             exact: true,
                         }
                     )
                 ).toBeVisible();
+            }
+        );
+
+        test(
+            "パスワードは20文字を超えて入力できない",
+            async ({ page }) => {
+                const {
+                    passwordInput,
+                } = getFormElements(page);
+
+                /*
+                 * 22文字入力する
+                 */
+                await passwordInput.fill(
+                    "abcdefghijklmnopqrstuv"
+                );
+
+                /*
+                 * maxLength=20 のため、
+                 * 20文字までしか入力されないことを確認する
+                 */
+                await expect(
+                    passwordInput
+                ).toHaveValue(
+                    "abcdefghijklmnopqrst"
+                );
+
+                /*
+                 * 入力欄の最大文字数設定も確認する
+                 */
+                await expect(
+                    passwordInput
+                ).toHaveAttribute(
+                    "maxlength",
+                    "20"
+                );
             }
         );
 
@@ -416,17 +488,18 @@ test.describe(
         );
 
         test(
-            "入力エラーがある場合は確認ボタンが無効になる",
+            "入力エラーがある場合は確認モーダルが表示されない",
             async ({ page }) => {
                 const {
                     accountNameInput,
                     confirmButton,
                 } = getFormElements(page);
 
-                await fillAndBlur(
-                    accountNameInput,
+                await accountNameInput.fill(
                     "aaaaa"
                 );
+
+                await accountNameInput.blur();
 
                 await expect(
                     page.getByText(
@@ -437,9 +510,11 @@ test.describe(
                     )
                 ).toBeVisible();
 
+                await confirmButton.click();
+
                 await expect(
-                    confirmButton
-                ).toBeDisabled();
+                    page.getByRole("dialog")
+                ).toHaveCount(0);
             }
         );
 
@@ -478,7 +553,7 @@ test.describe(
         );
 
         test(
-            "正常な値を入力して確認すると確認画面または確認モーダルが表示される",
+            "正常な値を入力して確認すると確認モーダルが表示される",
             async ({ page }) => {
                 const {
                     employeeSelect,
@@ -487,80 +562,60 @@ test.describe(
                     confirmButton,
                 } = getFormElements(page);
 
-                const employeeOptions =
-                    employeeSelect.getByRole(
-                        "option"
-                    );
+                /*
+                 * 社員一覧の非同期取得が終わり、
+                 * 2番目のoptionが描画されるまで待つ。
+                 *
+                 * 先頭は「選択してください」、
+                 * 2番目以降が実際の社員という想定。
+                 */
+                const firstEmployeeOption =
+                    employeeSelect
+                        .locator("option")
+                        .nth(1);
 
-                const optionCount =
-                    await employeeOptions.count();
-
-                expect(
-                    optionCount
-                ).toBeGreaterThan(1);
+                await expect(
+                    firstEmployeeOption
+                ).toBeAttached();
 
                 const employeeName =
                     (
-                        await employeeOptions
-                            .nth(1)
+                        await firstEmployeeOption
                             .textContent()
                     )?.trim();
 
-                if (!employeeName) {
+                const employeeUuid =
+                    await firstEmployeeOption
+                        .getAttribute("value");
+
+                if (
+                    !employeeName ||
+                    !employeeUuid
+                ) {
                     throw new Error(
-                        "選択対象の社員名を取得できませんでした。"
+                        "選択可能な社員情報を取得できませんでした。"
                     );
                 }
 
-                await employeeSelect.selectOption({
-                    index: 1,
-                });
+                /*
+                 * indexではなくvalueで選択する
+                 */
+                await employeeSelect.selectOption(
+                    employeeUuid
+                );
 
-                await fillAndBlur(
-                    accountNameInput,
+                await accountNameInput.fill(
                     "Suzuki01"
                 );
+                await accountNameInput.blur();
 
-                await fillAndBlur(
-                    passwordInput,
+                await passwordInput.fill(
                     "passSuzuki01"
                 );
-
-                await expect(
-                    confirmButton
-                ).toBeEnabled();
+                await passwordInput.blur();
 
                 await confirmButton.click();
 
-                /*
-                 * 確認画面へURL遷移する実装の場合
-                 */
-                if (
-                    page.url().includes(
-                        "/admin/account/confirm"
-                    )
-                ) {
-                    await expect(
-                        page
-                    ).toHaveURL(
-                        /\/admin\/account\/confirm\/?$/
-                    );
-
-                    await expect(
-                        page.getByText(
-                            "Suzuki01",
-                            {
-                                exact: true,
-                            }
-                        )
-                    ).toBeVisible();
-
-                    return;
-                }
-
-                /*
-                 * 同一画面上の確認モーダルを使う実装の場合
-                 */
                 const dialog =
                     page.getByRole("dialog");
 
@@ -589,19 +644,87 @@ test.describe(
         );
 
         test(
-            "キャンセルを押すと管理画面へ遷移する",
+            "キャンセルを押すと入力内容が初期化される",
             async ({ page }) => {
                 const {
+                    employeeSelect,
+                    accountNameInput,
+                    passwordInput,
                     cancelButton,
                 } = getFormElements(page);
 
-                await cancelButton.click();
+                /*
+                 * キャンセル前のURLを保持する
+                 */
+                const currentUrl = page.url();
+
+                /*
+                 * 一度フォームへ値を入力する
+                 */
+                await employeeSelect.selectOption({
+                    index: 1,
+                });
+
+                await accountNameInput.fill(
+                    "Suzuki01"
+                );
+
+                await passwordInput.fill(
+                    "passSuzuki01"
+                );
+
+                /*
+                 * 入力されたことを事前確認する
+                 */
+                await expect(
+                    employeeSelect
+                ).not.toHaveValue("");
 
                 await expect(
-                    page
-                ).toHaveURL(
-                    /\/admin\/?$/
+                    accountNameInput
+                ).toHaveValue(
+                    "Suzuki01"
                 );
+
+                await expect(
+                    passwordInput
+                ).toHaveValue(
+                    "passSuzuki01"
+                );
+
+                /*
+                 * キャンセルを押す
+                 */
+                await cancelButton.click();
+
+                /*
+                 * ページ遷移していないことを確認する
+                 */
+                await expect(
+                    page
+                ).toHaveURL(currentUrl);
+
+                /*
+                 * 各入力値が初期状態へ戻ることを確認する
+                 */
+                await expect(
+                    employeeSelect
+                ).toHaveValue("");
+
+                await expect(
+                    accountNameInput
+                ).toHaveValue("");
+
+                await expect(
+                    passwordInput
+                ).toHaveValue("");
+
+                /*
+                 * 確認モーダルが表示されていないことを確認する
+                 */
+                await expect(
+                    page.getByRole("dialog")
+                ).toHaveCount(0);
             }
         );
     }

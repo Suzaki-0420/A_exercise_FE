@@ -591,5 +591,208 @@ test.describe(
                 );
             }
         );
+        test(
+            "商品名が2文字未満の場合は文字数エラーが表示される",
+            async ({ page }) => {
+                const {
+                    productNameInput,
+                } = getFormElements(page);
+
+                await productNameInput.fill("A");
+                await productNameInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "商品名は2〜20文字で入力してください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+        test(
+            "商品名が20文字を超える場合は文字数エラーが表示される",
+            async ({ page }) => {
+                const {
+                    productNameInput,
+                } = getFormElements(page);
+
+                /*
+                 * 22文字の商品名を入力
+                 */
+                await productNameInput.fill(
+                    "abcdefghijklmnopqrstuv"
+                );
+
+                /*
+                 * blurでバリデーションを発生させる
+                 */
+                await productNameInput.blur();
+
+                /*
+                 * 文字数エラーが表示されることを確認
+                 */
+                await expect(
+                    page.getByText(
+                        "商品名は2〜20文字で入力してください。",
+                        {
+                            exact: true,
+                        }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+
+        test(
+            "単価が100万円を超える場合は数値範囲エラーが表示される",
+            async ({ page }) => {
+                const {
+                    priceInput,
+                } = getFormElements(page);
+
+                await priceInput.fill(
+                    "1000001"
+                );
+                await priceInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "価格は100万円以下で入力してください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+        test(
+            "単価が100万円の場合は数値範囲エラーが表示されない",
+            async ({ page }) => {
+                const {
+                    priceInput,
+                } = getFormElements(page);
+
+                await priceInput.fill(
+                    "1000000"
+                );
+                await priceInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "価格は100万円以下で入力してください。",
+                        { exact: true }
+                    )
+                ).toHaveCount(0);
+            }
+        );
+
+
+        test(
+            "在庫数が1000個を超える場合は数値範囲エラーが表示される",
+            async ({ page }) => {
+                const {
+                    stockInput,
+                } = getFormElements(page);
+
+                await stockInput.fill(
+                    "1001"
+                );
+                await stockInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "在庫数は1000個以下で入力してください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+        test(
+            "在庫数が1000個の場合は数値範囲エラーが表示されない",
+            async ({ page }) => {
+                const {
+                    stockInput,
+                } = getFormElements(page);
+
+                await stockInput.fill(
+                    "1000"
+                );
+                await stockInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "在庫数は1000個以下で入力してください。",
+                        { exact: true }
+                    )
+                ).toHaveCount(0);
+            }
+        );
+
+        test(
+            "画像を選択していない場合は必須エラーが表示される",
+            async ({ page }) => {
+                const {
+                    imageInput,
+                } = getFormElements(page);
+
+                await imageInput.focus();
+                await imageInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "商品画像を選択してください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+        test(
+            "画像以外のファイルを選択すると画像形式エラーが表示される",
+            async ({ page }) => {
+                const {
+                    imageInput,
+                } = getFormElements(page);
+
+                await imageInput.setInputFiles({
+                    name: "test.txt",
+                    mimeType: "text/plain",
+                    buffer: Buffer.from(
+                        "not image"
+                    ),
+                });
+
+                await imageInput.blur();
+
+                await expect(
+                    page.getByText(
+                        "正しい画像形式でアップロードしてください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
+        test(
+            "画像サイズが1000pxを超える場合は画像サイズエラーが表示される",
+            async ({ page }) => {
+                const {
+                    imageInput,
+                } = getFormElements(page);
+
+                await imageInput.setInputFiles(
+                    "e2e/fixtures/too-large-image.png"
+                );
+
+                await expect(
+                    page.getByText(
+                        "画像サイズは1000px以下でアップロードしてください。",
+                        { exact: true }
+                    )
+                ).toBeVisible();
+            }
+        );
+
     }
 );

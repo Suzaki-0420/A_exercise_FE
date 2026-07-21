@@ -467,6 +467,76 @@ export const useRegisterProduct = () => {
         }, [imageFile]);
 
     /**
+ * 画像の縦横サイズを検証する
+ */
+    const validateImageDimensions =
+        useCallback(
+            async (
+                file: File
+            ): Promise<boolean> => {
+                return new Promise(
+                    (resolve) => {
+                        const image =
+                            new Image();
+
+                        const objectUrl =
+                            URL.createObjectURL(
+                                file
+                            );
+
+                        image.onload = () => {
+                            const isValid =
+                                image.width <=
+                                1000 &&
+                                image.height <=
+                                1000;
+
+                            URL.revokeObjectURL(
+                                objectUrl
+                            );
+
+                            if (!isValid) {
+                                setErrors(
+                                    (prev) => ({
+                                        ...prev,
+                                        image:
+                                            "商品画像は縦横1000px以下を選択してください。",
+                                    })
+                                );
+
+                                resolve(false);
+
+                                return;
+                            }
+
+                            resolve(true);
+                        };
+
+                        image.onerror = () => {
+                            URL.revokeObjectURL(
+                                objectUrl
+                            );
+
+                            setErrors(
+                                (prev) => ({
+                                    ...prev,
+                                    image:
+                                        "商品画像を読み込めませんでした。",
+                                })
+                            );
+
+                            resolve(false);
+                        };
+
+                        image.src =
+                            objectUrl;
+                    }
+                );
+            },
+            []
+        );
+
+    /**
      * 商品名からフォーカスが外れた場合
      */
     const handleNameBlur =
@@ -601,47 +671,161 @@ export const useRegisterProduct = () => {
     );
 
     /**
-     * 商品画像の変更処理
-     */
-    const handleImageChange = useCallback(
-        (
-            event: ChangeEvent<HTMLInputElement>
-        ) => {
-            const file =
-                event.target.files?.[0] ?? null;
+ * 商品画像の変更処理
+ */
+    const handleImageChange =
+        useCallback(
+            async (
+                event:
+                    ChangeEvent<HTMLInputElement>
+            ): Promise<void> => {
+                const file =
+                    event.target
+                        .files?.[0] ??
+                    null;
 
-            if (!file) {
-                setImageFile(null);
-                setImagePreviewUrl(null);
+                /*
+                 * ファイル未選択
+                 */
+                if (!file) {
+                    setImageFile(null);
+                    setImagePreviewUrl(
+                        null
+                    );
 
-                return;
-            }
+                    setErrors(
+                        (prev) => ({
+                            ...prev,
+                            image:
+                                "商品画像を選択してください。",
+                        })
+                    );
 
-            /*
-             * 選択したFileを登録用に保持する。
-             */
-            setImageFile(file);
+                    return;
+                }
 
-            /*
-             * ブラウザ上でプレビュー表示するための
-             * 一時URLを生成する。
-             */
-            const previewUrl =
-                URL.createObjectURL(file);
+                /*
+                 * 画像形式チェック
+                 */
+                const allowedTypes = [
+                    "image/jpeg",
+                    "image/png",
+                ];
 
-            setImagePreviewUrl(previewUrl);
+                if (
+                    !allowedTypes.includes(
+                        file.type
+                    )
+                ) {
+                    setImageFile(null);
+                    setImagePreviewUrl(
+                        null
+                    );
 
-            setErrors((prev) => {
-                const newErrors = { ...prev };
+                    setErrors(
+                        (prev) => ({
+                            ...prev,
+                            image:
+                                "商品画像はJPEGまたはPNG形式を選択してください。",
+                        })
+                    );
 
-                delete newErrors.image;
-                delete newErrors.submit;
+                    return;
+                }
 
-                return newErrors;
-            });
-        },
-        []
-    );
+                /*
+                 * ファイルサイズチェック
+                 * 5MB以下
+                 */
+                const maxFileSize =
+                    5 * 1024 * 1024;
+
+                if (
+                    file.size >
+                    maxFileSize
+                ) {
+                    setImageFile(null);
+                    setImagePreviewUrl(
+                        null
+                    );
+
+                    setErrors(
+                        (prev) => ({
+                            ...prev,
+                            image:
+                                "商品画像は5MB以下を選択してください。",
+                        })
+                    );
+
+                    return;
+                }
+
+                /*
+                 * 縦横サイズチェック
+                 */
+                const isValidDimensions =
+                    await validateImageDimensions(
+                        file
+                    );
+
+                if (
+                    !isValidDimensions
+                ) {
+                    setImageFile(null);
+                    setImagePreviewUrl(
+                        null
+                    );
+
+                    return;
+                }
+
+                /*
+                 * 以前のプレビューURLを解放
+                 */
+                if (
+                    imagePreviewUrl
+                ) {
+                    URL.revokeObjectURL(
+                        imagePreviewUrl
+                    );
+                }
+
+                /*
+                 * すべて正常なら
+                 * 登録対象として保持する
+                 */
+                setImageFile(file);
+
+                const previewUrl =
+                    URL.createObjectURL(
+                        file
+                    );
+
+                setImagePreviewUrl(
+                    previewUrl
+                );
+
+                /*
+                 * 画像エラーを解除
+                 */
+                setErrors(
+                    (prev) => {
+                        const newErrors = {
+                            ...prev,
+                        };
+
+                        delete newErrors.image;
+                        delete newErrors.submit;
+
+                        return newErrors;
+                    }
+                );
+            },
+            [
+                validateImageDimensions,
+                imagePreviewUrl,
+            ]
+        );
 
     /**
      * 商品画像からフォーカスが外れた場合
