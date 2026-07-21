@@ -38,6 +38,10 @@ export default defineConfig({
                 'components/hooks/useUpdateOrderStatus.ts',
                 'components/hooks/useUpdateProduct.ts',
                 'components/hooks/updateProductValidation.ts',
+                'components/api/auth/adminSessionStorage.ts',
+                'components/api/auth/AdminWelcome.ts',
+                'components/common/AdminHeaderNavigation.ts',
+                'components/product/edit/productUpdateStorage.ts',
 
                 'infrastructures/AdminAuthRepository.ts',
                 'infrastructures/EmployeeAccountRepository.ts',
