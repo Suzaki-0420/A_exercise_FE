@@ -8,8 +8,6 @@ import type { IOrdersRepository } from
     "@/interfaces/IOrdersRepository";
 import type { IUpdateOrderStatusService } from
     "@/interfaces/IUpdateOrderStatusService";
-import type { Orders } from
-    "@/models/Orders";
 import type {
     UpdateOrderStatusComplete,
     UpdateOrderStatusConfirm,
