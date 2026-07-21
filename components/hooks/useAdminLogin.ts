@@ -1,5 +1,9 @@
 "use client";
 
+import {
+    clearLoggedInAdmin,
+    saveLoggedInAdmin,
+} from "@/components/api/auth/adminSessionStorage";
 import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
 import type { ILoginAdminService } from "@/interfaces/ILoginAdminService";
@@ -13,6 +17,7 @@ import {
     type ChangeEvent,
     type FormEvent,
     useCallback,
+    useEffect,
     useMemo,
     useState,
 } from "react";
@@ -92,6 +97,10 @@ export const useAdminLogin = () => {
     const [isLoading, setIsLoading] =
         useState(false);
 
+    useEffect(() => {
+        clearLoggedInAdmin();
+    }, []);
+
     const handleChange = useCallback(
         (event: ChangeEvent<HTMLInputElement>) => {
             const field = event.target
@@ -131,8 +140,11 @@ export const useAdminLogin = () => {
             setSubmitError(null);
 
             try {
-                await service.login(credentials);
+                const loggedInAdmin =
+                    await service.login(credentials);
+                saveLoggedInAdmin(loggedInAdmin);
                 router.replace("/admin");
+                router.refresh();
             } catch (error: unknown) {
                 if (error instanceof AdminLoginError) {
                     setFieldErrors(error.fieldErrors);

@@ -1,3 +1,4 @@
+import { AdminWelcome } from "@/components/api/auth/AdminWelcome";
 import { Button } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -20,9 +21,7 @@ export default async function AdminMenuPage() {
                     <h1 className="text-2xl font-bold text-gray-900">
                         メニュー
                     </h1>
-                    <p className="mt-2 text-sm text-gray-600">
-                        利用する管理機能を選択してください。
-                    </p>
+                    <AdminWelcome />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
