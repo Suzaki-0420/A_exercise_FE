@@ -1,5 +1,5 @@
 import type { IOrdersRepository } from "@/interfaces/IOrdersRepository";
-import type { Orders } from "@/models/Orders";
+
 import { injectable } from "inversify";
 import type {
     OrderSearchItem,

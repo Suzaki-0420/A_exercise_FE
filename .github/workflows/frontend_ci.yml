@@ -1,0 +1,75 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**"
+      - ".github/workflows/frontend_ci.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**"
+      - ".github/workflows/frontend_ci.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-ci
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ビルドとテスト
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 依存関係をインストール
+        run: npm ci
+
+      - name: 静的解析
+        run: npm run lint
+
+      - name: 単体テスト
+        run: npm run test
+
+      - name: ビルド
+        run: npm run build
+        env:
+          API_BASE_URL: http://${{ secrets.VM_HOST }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+
+      - name: Playwrightのブラウザをインストール
+        run: npx playwright install --with-deps chromium
+
+      - name: E2Eテスト
+        run: npm run test:e2e
+        env:
+          CI: true
+          API_BASE_URL: http://${{ secrets.VM_HOST }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_TRUST_HOST: true
+
+      - name: テストレポートを保存
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

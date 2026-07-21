@@ -45,7 +45,6 @@ export const UpdateOrderStatus = ({
         closeConfirmModal,
         confirmUpdateStatus,
 
-        resetStatus,
         closeToast,
     } = useUpdateOrderStatus(
         orderUuid,
