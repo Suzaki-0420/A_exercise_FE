@@ -300,10 +300,9 @@ describe("OrdersRepository", () => {
 
         it("404ならnull", async () => {
 
-            fetchMock.mockResolvedValue({
-                ok: false,
-                status: 404
-            });
+            fetchMock.mockResolvedValue(
+                createErrorResponse({}, 404)
+            );
 
 
             await expect(
