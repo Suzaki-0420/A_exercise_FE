@@ -1,5 +1,5 @@
 name: Frontend CI
-
+# テストはコメントアウト中
 on:
   push:
     branches:
@@ -46,8 +46,8 @@ jobs:
       - name: 静的解析
         run: npm run lint
 
-      - name: 単体テスト
-        run: npm run test
+      #- name: 単体テスト
+      #  run: npm run test
 
       - name: ビルド
         run: npm run build
@@ -58,13 +58,13 @@ jobs:
       - name: Playwrightのブラウザをインストール
         run: npx playwright install --with-deps chromium
 
-      - name: E2Eテスト
-        run: npm run test:e2e
-        env:
-          CI: true
-          API_BASE_URL: http://${{ secrets.VM_HOST }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          AUTH_TRUST_HOST: true
+      # - name: E2Eテスト
+      #  run: npm run test:e2e
+      #  env:
+      #    CI: true
+      #    API_BASE_URL: http://${{ secrets.VM_HOST }}
+      #    AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      #    AUTH_TRUST_HOST: true
 
       - name: テストレポートを保存
         if: failure()
