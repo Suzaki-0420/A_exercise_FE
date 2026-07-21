@@ -329,9 +329,21 @@ export const ProductSearch = () => {
 
     return (
         <div className="mx-auto max-w-6xl rounded-lg border border-border bg-white p-8 shadow-sm">
-            <h2 className="mb-6 border-b pb-4 text-center text-2xl font-bold text-foreground">
-                商品検索
-            </h2>
+            <div className="mb-6 flex items-center justify-center gap-4">
+                <h2 className="text-2xl font-bold text-foreground">
+                    商品検索
+                </h2>
+
+                <Button
+                    type="button"
+                    onClick={() => {
+                        router.push("/admin/product/add");
+                    }}
+                    className="bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700"
+                >
+                    新商品登録
+                </Button>
+            </div>
 
             {/* 検索方法タブ */}
             <div

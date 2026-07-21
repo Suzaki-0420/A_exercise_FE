@@ -16,7 +16,11 @@ export default defineConfig({
 
             include: [
                 'services/RegisterCategoryService.ts',
-                'services/SearchOrders',
+                'services/RegisterProductService.ts',
+                'services/DeleteProductService.ts',
+                'services/SearchProductByCategoryService.ts',
+                'services/SearchProductByKeywordService.ts',
+                'services/SearchOrdersService.ts',
                 'services/RegisterEmployeeAccount.ts',
                 'components/hooks/useRegisterCategory.ts',
                 'components/hooks/useSearchOrders.ts',
