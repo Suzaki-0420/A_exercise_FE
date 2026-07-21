@@ -101,10 +101,24 @@ const changeSearchCondition = (
  */
 const renderSearchOrdersHook =
     async () => {
+        vi.useRealTimers();
+
         const hook = renderHook(
             () => useSearchOrders(),
         );
 
+        /*
+         * 初期取得処理が実際に開始されたことを確認する。
+         */
+        await waitFor(() => {
+            expect(
+                mockFindAll,
+            ).toHaveBeenCalledTimes(1);
+        });
+
+        /*
+         * 初期取得処理が完了したことを確認する。
+         */
         await waitFor(() => {
             expect(
                 hook.result.current.isLoading,
