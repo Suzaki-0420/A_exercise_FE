@@ -296,10 +296,23 @@ export const SearchOrders = () => {
 
                                                 {/* 注文内容 */}
                                                 <td className="border-b px-4 py-3">
-                                                    {
-                                                        order.orderContent ||
-                                                        "-"
-                                                    }
+                                                    <p className="mb-2 break-all text-sm text-gray-600">
+                                                        <span className="font-semibold">
+                                                            注文ID：
+                                                        </span>
+
+                                                        {
+                                                            order.orderUuid ||
+                                                            "-"
+                                                        }
+                                                    </p>
+
+                                                    <p>
+                                                        {
+                                                            order.orderContent ||
+                                                            "-"
+                                                        }
+                                                    </p>
                                                 </td>
 
                                                 {/* 注文ステータス */}

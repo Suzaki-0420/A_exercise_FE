@@ -10,7 +10,11 @@ import type { IUpdateOrderStatusService } from
     "@/interfaces/IUpdateOrderStatusService";
 import type { Orders } from
     "@/models/Orders";
-
+import type {
+    UpdateOrderStatusComplete,
+    UpdateOrderStatusConfirm,
+    UpdateOrderStatusInput,
+} from "@/models/UpdateOrderStatusData";
 /**
  * 注文ステータス更新Service
  */
@@ -32,8 +36,7 @@ export class UpdateOrderStatusService
      */
     public async findById(
         orderUuid: string
-    ): Promise<Orders | null> {
-
+    ): Promise<UpdateOrderStatusInput | null> {
         return await this.ordersRepository
             .findById(orderUuid);
     }
@@ -42,21 +45,27 @@ export class UpdateOrderStatusService
      * 注文ステータスの更新内容を確認する
      */
     public async confirmStatusUpdate(
-        orders: Orders
-    ): Promise<Orders> {
-
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusConfirm> {
         return await this.ordersRepository
-            .confirmStatusUpdate(orders);
+            .confirmStatusUpdate(
+                orderId,
+                newStatusId
+            );
     }
 
     /**
      * 注文ステータスを更新する
      */
     public async updateStatus(
-        orders: Orders
-    ): Promise<Orders> {
-
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusComplete> {
         return await this.ordersRepository
-            .updateStatus(orders);
+            .updateStatus(
+                orderId,
+                newStatusId
+            );
     }
 }

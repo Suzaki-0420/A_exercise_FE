@@ -1,6 +1,11 @@
 import type { Orders } from "@/models/Orders";
 import type { OrderSearchItem } from
     "@/models/OrderSearchItem";
+import type {
+    UpdateOrderStatusInput,
+    UpdateOrderStatusConfirm,
+    UpdateOrderStatusComplete
+} from "@/models/UpdateOrderStatusData";
 /**
  * 注文Repositoryインターフェイス
  */
@@ -24,19 +29,21 @@ export interface IOrdersRepository {
      */
     findById(
         orderUuid: string
-    ): Promise<Orders | null>;
+    ): Promise<UpdateOrderStatusInput | null>;
 
     /**
      * 注文ステータスの更新内容を確認する
      */
     confirmStatusUpdate(
-        orders: Orders
-    ): Promise<Orders>;
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusConfirm>;
 
     /**
      * 注文ステータスを更新する
      */
     updateStatus(
-        orders: Orders
-    ): Promise<Orders>;
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusComplete>;
 }

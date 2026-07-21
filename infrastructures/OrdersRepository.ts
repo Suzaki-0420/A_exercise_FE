@@ -5,6 +5,11 @@ import type {
     OrderSearchItem,
     SearchOrdersResponse,
 } from "@/models/OrderSearchItem";
+import type {
+    UpdateOrderStatusInput,
+    UpdateOrderStatusConfirm,
+    UpdateOrderStatusComplete
+} from "@/models/UpdateOrderStatusData";
 /**
  * 注文Repository実装クラス
  */
@@ -135,10 +140,10 @@ export class OrdersRepository
      */
     public async findById(
         orderUuid: string
-    ): Promise<Orders | null> {
+    ): Promise<UpdateOrderStatusInput | null> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
-            `/proxy-api/order/status/update?${orderUuid}`;
+            `/proxy-api/order/status/update/${encodeURIComponent(orderUuid)}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -182,8 +187,9 @@ export class OrdersRepository
      * 注文ステータスの更新内容を確認する
      */
     public async confirmStatusUpdate(
-        orders: Orders
-    ): Promise<Orders> {
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusConfirm> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
             "/proxy-api/order/status/update/confirm";
@@ -196,17 +202,20 @@ export class OrdersRepository
          * ここを修正する。
          */
         const requestBody = {
-            orderUuid: orders.orderUuid,
-            orderStatusId:
-                orders.orderStatus.id,
+            orderId,
+            newStatusId,
         };
 
         const response = await fetch(url, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type":
+                    "application/json",
             },
-            body: JSON.stringify(requestBody),
+            credentials: "include",
+            body: JSON.stringify(
+                requestBody
+            ),
         });
 
         if (!response.ok) {
@@ -248,20 +257,20 @@ export class OrdersRepository
      * 注文ステータスを更新する
      */
     public async updateStatus(
-        orders: Orders
-    ): Promise<Orders> {
+        orderId: string,
+        newStatusId: number
+    ): Promise<UpdateOrderStatusComplete> {
         // TODO: 実際のControllerのURLに合わせて修正する
         const url =
             "/proxy-api/order/status/update/complete";
 
         const requestBody = {
-            orderUuid: orders.orderUuid,
-            orderStatusId:
-                orders.orderStatus.id,
+            orderId,
+            newStatusId,
         };
 
         const response = await fetch(url, {
-            method: "PUT",
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
