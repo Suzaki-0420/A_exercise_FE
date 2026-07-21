@@ -21,7 +21,7 @@ export default defineConfig({
                 'services/SearchProductByCategoryService.ts',
                 'services/SearchProductByKeywordService.ts',
                 'services/SearchOrdersService.ts',
-                'services/RegisterEmployeeAccount.ts',
+                'services/RegisterEmployeeAccountService.ts',
                 'components/hooks/useRegisterCategory.ts',
                 'components/hooks/useSearchOrders.ts',
                 'components/hooks/useRegisterEmployeeAccount.ts',
