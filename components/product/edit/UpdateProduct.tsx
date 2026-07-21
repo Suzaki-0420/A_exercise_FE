@@ -51,6 +51,11 @@ export const UpdateProduct = ({
         isLoading,
         handleChange,
         handleImageChange,
+        handleNameBlur,
+        handlePriceBlur,
+        handleStockBlur,
+        handleCategoryBlur,
+        handleImageBlur,
         handleProceedToConfirm,
         handleCancel,
     } = useUpdateProduct(productUuid);
@@ -136,6 +141,7 @@ export const UpdateProduct = ({
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
+                            onBlur={handleNameBlur}
                             aria-invalid={Boolean(
                                 fieldErrors.name
                             )}
@@ -177,6 +183,7 @@ export const UpdateProduct = ({
                                         : formData.price
                                 }
                                 onChange={handleChange}
+                                onBlur={handlePriceBlur}
                                 aria-invalid={Boolean(
                                     fieldErrors.price
                                 )}
@@ -213,6 +220,7 @@ export const UpdateProduct = ({
                                         : stockQuantity
                                 }
                                 onChange={handleChange}
+                                onBlur={handleStockBlur}
                                 aria-invalid={Boolean(
                                     fieldErrors.stockQuantity
                                 )}
@@ -245,6 +253,7 @@ export const UpdateProduct = ({
                                     ?.categoryUuid ?? ""
                             }
                             onChange={handleChange}
+                            onBlur={handleCategoryBlur}
                             aria-invalid={Boolean(
                                 fieldErrors.categoryUuid
                             )}
@@ -279,6 +288,7 @@ export const UpdateProduct = ({
                             type="file"
                             accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                             onChange={handleImageChange}
+                            onBlur={handleImageBlur}
                             aria-invalid={Boolean(
                                 fieldErrors.image
                             )}

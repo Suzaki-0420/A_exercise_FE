@@ -25,7 +25,6 @@ import {
     useCallback,
     useEffect,
     useMemo,
-    useRef,
     useState,
 } from "react";
 
@@ -100,11 +99,7 @@ export const useUpdateProduct = (
     const [imageFile, setImageFile] =
         useState<File | null>(initialImageFile);
     const [imagePreviewUrl, setImagePreviewUrl] =
-        useState<string | null>(() =>
-            createImagePreviewUrl(initialImageFile)
-        );
-    const imagePreviewUrlRef =
-        useRef<string | null>(imagePreviewUrl);
+        useState<string | null>(null);
     const [fieldErrors, setFieldErrors] =
         useState<ProductUpdateFieldErrors>({});
     const [submitError, setSubmitError] =
@@ -113,14 +108,20 @@ export const useUpdateProduct = (
         Boolean(productUuid)
     );
 
-    useEffect(
-        () => () => {
-            revokeImagePreviewUrl(
-                imagePreviewUrlRef.current
-            );
-        },
-        []
-    );
+    useEffect(() => {
+        let nextPreviewUrl: string | null = null;
+        const previewTimer = window.setTimeout(() => {
+            nextPreviewUrl =
+                createImagePreviewUrl(imageFile);
+
+            setImagePreviewUrl(nextPreviewUrl);
+        }, 0);
+
+        return () => {
+            window.clearTimeout(previewTimer);
+            revokeImagePreviewUrl(nextPreviewUrl);
+        };
+    }, [imageFile]);
 
     useEffect(() => {
         if (!productUuid) {
@@ -283,16 +284,7 @@ export const useUpdateProduct = (
             const nextImageFile =
                 event.target.files?.[0] ?? null;
 
-            revokeImagePreviewUrl(
-                imagePreviewUrlRef.current
-            );
-
-            const nextPreviewUrl =
-                createImagePreviewUrl(nextImageFile);
-
-            imagePreviewUrlRef.current = nextPreviewUrl;
             setImageFile(nextImageFile);
-            setImagePreviewUrl(nextPreviewUrl);
             setFieldErrors((previous) => ({
                 ...previous,
                 image: undefined,
@@ -301,6 +293,64 @@ export const useUpdateProduct = (
         },
         []
     );
+
+    /**
+     * 指定された入力項目を検証する
+     */
+    const validateField = useCallback(
+        (fieldName: keyof ProductUpdateFieldErrors) => {
+            if (!formData) {
+                return;
+            }
+
+            const validationErrors =
+                validateUpdateProduct(
+                    formData,
+                    imageFile
+                );
+
+            setFieldErrors((previous) => ({
+                ...previous,
+                [fieldName]: validationErrors[fieldName],
+            }));
+        },
+        [formData, imageFile]
+    );
+
+    /**
+     * 商品名からフォーカスが外れた場合
+     */
+    const handleNameBlur = useCallback(() => {
+        validateField("name");
+    }, [validateField]);
+
+    /**
+     * 単価からフォーカスが外れた場合
+     */
+    const handlePriceBlur = useCallback(() => {
+        validateField("price");
+    }, [validateField]);
+
+    /**
+     * 在庫数からフォーカスが外れた場合
+     */
+    const handleStockBlur = useCallback(() => {
+        validateField("stockQuantity");
+    }, [validateField]);
+
+    /**
+     * 商品カテゴリからフォーカスが外れた場合
+     */
+    const handleCategoryBlur = useCallback(() => {
+        validateField("categoryUuid");
+    }, [validateField]);
+
+    /**
+     * 商品画像からフォーカスが外れた場合
+     */
+    const handleImageBlur = useCallback(() => {
+        validateField("image");
+    }, [validateField]);
 
     const handleProceedToConfirm = useCallback(
         (event: FormEvent<HTMLFormElement>) => {
@@ -423,6 +473,11 @@ export const useUpdateProduct = (
         completedResult,
         handleChange,
         handleImageChange,
+        handleNameBlur,
+        handlePriceBlur,
+        handleStockBlur,
+        handleCategoryBlur,
+        handleImageBlur,
         handleProceedToConfirm,
         handleUpdate,
         handleBackToInput,
