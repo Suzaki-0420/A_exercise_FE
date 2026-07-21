@@ -99,8 +99,8 @@ export const RegisterCategory = () => {
                                             : undefined
                                     }
                                     className={`w-full rounded border px-3 py-2 ${errors.name
-                                            ? "border-red-500"
-                                            : "border-gray-300"
+                                        ? "border-red-500"
+                                        : "border-gray-300"
                                         }`}
                                 />
 

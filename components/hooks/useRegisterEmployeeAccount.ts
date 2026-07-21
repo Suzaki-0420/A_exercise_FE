@@ -270,6 +270,14 @@ export const useRegisterEmployeeAccount =
             ]);
 
         /**
+    * 社員選択欄から
+    * フォーカスが外れた場合
+    */
+        const handleEmployeeBlur =
+            useCallback(() => {
+                validateEmployee();
+            }, [validateEmployee]);
+        /**
          * アカウント名を検証する
          */
         const validateAccountName =
@@ -376,8 +384,8 @@ export const useRegisterEmployeeAccount =
                 }
 
                 if (
-                    password.length < 8 ||
-                    password.length > 64
+                    password.length < 5 ||
+                    password.length > 21
                 ) {
                     setFieldError(
                         "password",
@@ -720,6 +728,7 @@ export const useRegisterEmployeeAccount =
             handleChange,
             handleAccountNameBlur,
             handlePasswordBlur,
+            handleEmployeeBlur,
 
             openConfirmModal,
             closeConfirmModal,

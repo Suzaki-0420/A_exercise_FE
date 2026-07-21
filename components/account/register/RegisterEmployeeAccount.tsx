@@ -26,6 +26,7 @@ export const RegisterEmployeeAccount =
             handleChange,
             handleAccountNameBlur,
             handlePasswordBlur,
+            handleEmployeeBlur,
 
             openConfirmModal,
             closeConfirmModal,
@@ -106,6 +107,7 @@ export const RegisterEmployeeAccount =
                                             onChange={
                                                 handleChange
                                             }
+                                            onBlur={handleEmployeeBlur}
                                             disabled={
                                                 isLoading ||
                                                 employeeAccounts
