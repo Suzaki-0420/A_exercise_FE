@@ -50,6 +50,24 @@ const createCategoryRepository =
     });
 
 describe("UpdateProductService", () => {
+    it("商品名の重複確認をRepositoryへ委譲する", async () => {
+        const repository = createProductRepository();
+        const existsByName = vi.spyOn(
+            repository,
+            "existsByName"
+        );
+        const service = new UpdateProductService(
+            repository,
+            createCategoryRepository()
+        );
+
+        await service.validateProductName("油性ペン");
+
+        expect(existsByName).toHaveBeenCalledWith(
+            "油性ペン"
+        );
+    });
+
     it("商品カテゴリ一覧を取得できる", async () => {
         const service = new UpdateProductService(
             createProductRepository(),

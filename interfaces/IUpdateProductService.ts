@@ -7,6 +7,11 @@ import type { ProductUpdateResult } from "@/models/ProductUpdate";
  */
 export interface IUpdateProductService {
     /**
+     * 商品名の重複を確認する
+     */
+    validateProductName(name: string): Promise<void>;
+
+    /**
      * 商品カテゴリ一覧を取得する
      */
     getCategories(): Promise<ProductCategory[]>;

@@ -25,6 +25,15 @@ export class UpdateProductService
     ) {}
 
     /**
+     * 商品名の重複を確認する
+     */
+    public async validateProductName(
+        name: string
+    ): Promise<void> {
+        await this.productRepository.existsByName(name);
+    }
+
+    /**
      * 商品カテゴリ一覧を取得する
      */
     public async getCategories(): Promise<ProductCategory[]> {

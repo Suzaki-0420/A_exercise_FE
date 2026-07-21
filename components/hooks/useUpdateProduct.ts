@@ -25,6 +25,7 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 
@@ -107,6 +108,15 @@ export const useUpdateProduct = (
     const [isLoading, setIsLoading] = useState(
         Boolean(productUuid)
     );
+    const originalProductNameRef =
+        useRef<string | null>(null);
+    const currentProductNameRef = useRef("");
+    const validatedProductNameRef =
+        useRef<string | null>(null);
+    const pendingNameValidationRef = useRef<{
+        name: string;
+        promise: Promise<boolean>;
+    } | null>(null);
 
     useEffect(() => {
         let nextPreviewUrl: string | null = null;
@@ -149,10 +159,12 @@ export const useUpdateProduct = (
                 return;
             }
 
+            const storedProduct =
+                loadProductForUpdate(productUuid);
             const selectedProduct =
                 draft?.productUuid === productUuid
                     ? draft
-                    : loadProductForUpdate(productUuid);
+                    : storedProduct;
 
             if (!selectedProduct) {
                 if (isActive) {
@@ -170,6 +182,15 @@ export const useUpdateProduct = (
                 }
                 return;
             }
+
+            const originalProduct =
+                storedProduct ?? selectedProduct;
+            originalProductNameRef.current =
+                originalProduct.name.trim();
+            currentProductNameRef.current =
+                selectedProduct.name;
+            validatedProductNameRef.current =
+                originalProduct.name.trim();
 
             try {
                 const productCategories =
@@ -222,6 +243,11 @@ export const useUpdateProduct = (
             >
         ) => {
             const { name, value } = event.target;
+
+            if (name === "name") {
+                currentProductNameRef.current = value;
+                validatedProductNameRef.current = null;
+            }
 
             setFormData((previous) => {
                 if (!previous) {
@@ -318,11 +344,116 @@ export const useUpdateProduct = (
     );
 
     /**
+     * 商品名の形式と重複を確認する
+     */
+    const validateName = useCallback(
+        async (): Promise<boolean> => {
+            if (!formData) {
+                return false;
+            }
+
+            const validationError =
+                validateUpdateProduct(
+                    formData,
+                    imageFile
+                ).name;
+
+            if (validationError) {
+                setFieldErrors((previous) => ({
+                    ...previous,
+                    name: validationError,
+                }));
+                return false;
+            }
+
+            const normalizedName =
+                formData.name.trim();
+
+            if (
+                normalizedName ===
+                    originalProductNameRef.current ||
+                normalizedName ===
+                    validatedProductNameRef.current
+            ) {
+                setFieldErrors((previous) => ({
+                    ...previous,
+                    name: undefined,
+                }));
+                return true;
+            }
+
+            const pendingValidation =
+                pendingNameValidationRef.current;
+
+            if (
+                pendingValidation?.name === normalizedName
+            ) {
+                return await pendingValidation.promise;
+            }
+
+            const validationPromise = (async () => {
+                try {
+                    await service.validateProductName(
+                        normalizedName
+                    );
+
+                    if (
+                        currentProductNameRef.current.trim() !==
+                        normalizedName
+                    ) {
+                        return false;
+                    }
+
+                    validatedProductNameRef.current =
+                        normalizedName;
+                    setFieldErrors((previous) => ({
+                        ...previous,
+                        name: undefined,
+                    }));
+                    return true;
+                } catch (error: unknown) {
+                    if (
+                        currentProductNameRef.current.trim() ===
+                        normalizedName
+                    ) {
+                        setFieldErrors((previous) => ({
+                            ...previous,
+                            name:
+                                error instanceof Error
+                                    ? error.message
+                                    : "商品名の重複確認に失敗しました。",
+                        }));
+                    }
+
+                    validatedProductNameRef.current = null;
+                    return false;
+                } finally {
+                    if (
+                        pendingNameValidationRef.current
+                            ?.name === normalizedName
+                    ) {
+                        pendingNameValidationRef.current =
+                            null;
+                    }
+                }
+            })();
+
+            pendingNameValidationRef.current = {
+                name: normalizedName,
+                promise: validationPromise,
+            };
+
+            return await validationPromise;
+        },
+        [formData, imageFile, service]
+    );
+
+    /**
      * 商品名からフォーカスが外れた場合
      */
-    const handleNameBlur = useCallback(() => {
-        validateField("name");
-    }, [validateField]);
+    const handleNameBlur = useCallback(async () => {
+        await validateName();
+    }, [validateName]);
 
     /**
      * 単価からフォーカスが外れた場合
@@ -353,7 +484,7 @@ export const useUpdateProduct = (
     }, [validateField]);
 
     const handleProceedToConfirm = useCallback(
-        (event: FormEvent<HTMLFormElement>) => {
+        async (event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
 
             if (!formData) {
@@ -372,6 +503,12 @@ export const useUpdateProduct = (
                 return;
             }
 
+            const isNameValid = await validateName();
+
+            if (!isNameValid) {
+                return;
+            }
+
             const normalizedProduct = {
                 ...formData,
                 name: formData.name.trim(),
@@ -380,7 +517,13 @@ export const useUpdateProduct = (
             saveDraft(normalizedProduct, imageFile);
             router.push(PRODUCT_CONFIRM_PATH);
         },
-        [formData, imageFile, router, saveDraft]
+        [
+            formData,
+            imageFile,
+            router,
+            saveDraft,
+            validateName,
+        ]
     );
 
     const handleUpdate = useCallback(async () => {
