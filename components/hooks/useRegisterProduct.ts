@@ -127,11 +127,7 @@ export const useRegisterProduct = () => {
     useEffect(() => {
         setErrors((prev) => {
             if (categoriesError) {
-                if (
-                    prev.system === categoriesError
-                ) {
-                    return prev;
-                }
+
 
                 return {
                     ...prev,
@@ -554,9 +550,7 @@ export const useRegisterProduct = () => {
                 ...prev,
 
                 productStock: {
-                    stockUuid:
-                        prev.productStock
-                            ?.stockUuid ?? "",
+                    stockUuid: "",
 
                     quantity:
                         value === ""
