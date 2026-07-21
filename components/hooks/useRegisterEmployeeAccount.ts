@@ -30,7 +30,6 @@ type EmployeeAccountFormErrors = {
     employeeUuid?: string;
     name?: string;
     password?: string;
-    confirmPassword?: string;
     submit?: string;
     system?: string;
 };
@@ -44,6 +43,19 @@ const createInitialFormData =
         name: "",
         password: "",
     });
+
+/**
+* すべて同じ文字で構成されているか判定する
+*/
+const isSingleCharacterOnly =
+    (value: string): boolean => {
+
+        if (value.length <= 1) {
+            return false;
+        }
+
+        return new Set(value).size === 1;
+    };
 
 /**
  * 担当者アカウント登録画面用カスタムフック
@@ -119,52 +131,64 @@ export const useRegisterEmployeeAccount =
                 ?.name ?? "";
 
         /**
-         * 未登録社員一覧を取得する
-         */
-        const loadForm = useCallback(
-            async (): Promise<void> => {
-                setIsInitialLoading(true);
-
-                try {
-                    const accounts =
-                        await service.getForm();
-
-                    setEmployeeAccounts(
-                        accounts
-                    );
-
-                    setErrors(prev => {
-                        const newErrors = {
-                            ...prev,
-                        };
-
-                        delete newErrors.system;
-
-                        return newErrors;
-                    });
-                } catch (error: unknown) {
-                    const message =
-                        error instanceof Error
-                            ? error.message
-                            : "社員情報の取得に失敗しました。";
-
-                    setErrors(prev => ({
-                        ...prev,
-                        system: message,
-                    }));
-                } finally {
-                    setIsInitialLoading(false);
-                }
-            },
-            [service]
-        );
-
-        /**
-         * 初期表示時に未登録社員一覧を取得する
-         */
+ * 初期表示時に未登録社員一覧を取得する
+ */
         useEffect(() => {
+            let isActive = true;
+
+            const loadForm =
+                async (): Promise<void> => {
+                    try {
+                        const accounts =
+                            await service.getForm();
+
+                        if (!isActive) {
+                            return;
+                        }
+
+                        setEmployeeAccounts(
+                            accounts
+                        );
+
+                        setErrors(prev => {
+                            const newErrors = {
+                                ...prev,
+                            };
+
+                            delete newErrors.system;
+
+                            return newErrors;
+                        });
+                    } catch (error: unknown) {
+                        if (!isActive) {
+                            return;
+                        }
+
+                        const message =
+                            error instanceof Error
+                                ? error.message
+                                : "社員情報の取得に失敗しました。";
+
+                        setErrors(prev => ({
+                            ...prev,
+                            system: message,
+                        }));
+                    } finally {
+                        if (isActive) {
+                            setIsInitialLoading(
+                                false
+                            );
+                        }
+                    }
+                };
+
             void loadForm();
-        }, [loadForm]);
+
+            return () => {
+                isActive = false;
+            };
+        }, [service]);
+
 
         /**
          * トーストを3秒後に閉じる
@@ -291,6 +315,19 @@ export const useRegisterEmployeeAccount =
                         return false;
                     }
 
+                    if (
+                        isSingleCharacterOnly(
+                            accountName
+                        )
+                    ) {
+                        setFieldError(
+                            "name",
+                            "アカウント名に同じ文字のみを使用することはできません。"
+                        );
+
+                        return false;
+                    }
+
                     try {
                         await service
                             .validateAccountName(
@@ -344,7 +381,7 @@ export const useRegisterEmployeeAccount =
                 ) {
                     setFieldError(
                         "password",
-                        "パスワードは8文字以上64文字以内で入力してください。"
+                        "パスワードは5文字以上20文字以内で入力してください。"
                     );
 
                     return false;
@@ -361,6 +398,19 @@ export const useRegisterEmployeeAccount =
                     setFieldError(
                         "password",
                         "パスワードは半角英数字で入力してください。"
+                    );
+
+                    return false;
+                }
+
+                if (
+                    isSingleCharacterOnly(
+                        password
+                    )
+                ) {
+                    setFieldError(
+                        "password",
+                        "パスワードに同じ文字のみを使用することはできません。"
                     );
 
                     return false;
@@ -422,6 +472,15 @@ export const useRegisterEmployeeAccount =
             }, [validateAccountName]);
 
         /**
+        * パスワードから
+        * フォーカスが外れた場合
+        */
+        const handlePasswordBlur =
+            useCallback(() => {
+                validatePassword();
+            }, [validatePassword]);
+
+        /**
          * 入力内容を検証して
          * 確認モーダルを開く
          */
@@ -430,11 +489,11 @@ export const useRegisterEmployeeAccount =
                 const isEmployeeValid =
                     validateEmployee();
 
-                const isAccountNameValid =
-                    await validateAccountName();
-
                 const isPasswordValid =
                     validatePassword();
+
+                const isAccountNameValid =
+                    await validateAccountName();
 
                 if (
                     !isEmployeeValid ||
@@ -646,15 +705,6 @@ export const useRegisterEmployeeAccount =
             setIsToastVisible(false);
         }, []);
 
-        const hasValidationErrors =
-            Boolean(
-                errors.employeeUuid ||
-                errors.name ||
-                errors.password ||
-                errors.confirmPassword ||
-                errors.system
-            );
-
         return {
             employeeAccounts,
             formData,
@@ -666,10 +716,10 @@ export const useRegisterEmployeeAccount =
             isLoading,
             isConfirmOpen,
             isToastVisible,
-            hasValidationErrors,
 
             handleChange,
             handleAccountNameBlur,
+            handlePasswordBlur,
 
             openConfirmModal,
             closeConfirmModal,

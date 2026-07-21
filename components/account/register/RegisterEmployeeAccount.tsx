@@ -22,10 +22,10 @@ export const RegisterEmployeeAccount =
             isLoading,
             isConfirmOpen,
             isToastVisible,
-            hasValidationErrors,
 
             handleChange,
             handleAccountNameBlur,
+            handlePasswordBlur,
 
             openConfirmModal,
             closeConfirmModal,
@@ -261,10 +261,13 @@ export const RegisterEmployeeAccount =
                                                 formData
                                                     .password
                                             }
-                                            minLength={8}
-                                            maxLength={64}
+                                            minLength={5}
+                                            maxLength={20}
                                             onChange={
                                                 handleChange
+                                            }
+                                            onBlur={
+                                                handlePasswordBlur
                                             }
                                             disabled={
                                                 isLoading
@@ -294,6 +297,10 @@ export const RegisterEmployeeAccount =
                                                 }
                                             </p>
                                         )}
+                                        <p className="shrink-0 text-sm text-gray-500">
+                                            {formData.password.length}
+                                            /20文字
+                                        </p>
                                     </div>
                                 </div>
 
@@ -316,7 +323,6 @@ export const RegisterEmployeeAccount =
                                         type="submit"
                                         disabled={
                                             isLoading ||
-                                            hasValidationErrors ||
                                             employeeAccounts
                                                 .length ===
                                             0
