@@ -968,7 +968,7 @@ describe(
         );
 
         it(
-            "パスワードが8文字未満の場合は文字数エラーになる",
+            "パスワードが5文字未満の場合は文字数エラーになる",
             async () => {
                 const { result } =
                     renderHook(
@@ -995,7 +995,7 @@ describe(
                 changeField(
                     result,
                     "password",
-                    "abc1234",
+                    "abc1",
                 );
 
                 await act(async () => {
@@ -1018,7 +1018,7 @@ describe(
         );
 
         it(
-            "パスワードが64文字の場合は確認モーダルを開ける",
+            "パスワードが20文字の場合は確認モーダルを開ける",
             async () => {
                 const { result } =
                     renderHook(
@@ -1045,7 +1045,7 @@ describe(
                 changeField(
                     result,
                     "password",
-                    `${"a".repeat(63)}1`,
+                    `${"a".repeat(19)}1`,
                 );
 
                 await act(async () => {
@@ -1066,7 +1066,7 @@ describe(
         );
 
         it(
-            "パスワードが64文字を超える場合は文字数エラーになる",
+            "パスワードが20文字を超える場合は文字数エラーになる",
             async () => {
                 const { result } =
                     renderHook(
@@ -1093,7 +1093,7 @@ describe(
                 changeField(
                     result,
                     "password",
-                    "a".repeat(65),
+                    `${"a".repeat(20)}1`,
                 );
 
                 await act(async () => {

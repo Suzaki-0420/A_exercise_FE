@@ -385,7 +385,7 @@ export const useRegisterEmployeeAccount =
 
                 if (
                     password.length < 5 ||
-                    password.length > 21
+                    password.length > 20
                 ) {
                     setFieldError(
                         "password",
