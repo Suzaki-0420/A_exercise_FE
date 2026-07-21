@@ -290,10 +290,6 @@ describe(
                         .isToastVisible,
                 ).toBe(false);
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(false);
             },
         );
 
@@ -361,10 +357,6 @@ describe(
                         .employeeAccounts,
                 ).toEqual([]);
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(true);
 
                 expect(
                     result.current
@@ -547,10 +539,6 @@ describe(
                         .isConfirmOpen,
                 ).toBe(false);
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(true);
             },
         );
 
@@ -679,7 +667,7 @@ describe(
                 );
 
                 const accountName =
-                    "a".repeat(20);
+                    `${"a".repeat(19)}1`;
 
                 changeField(
                     result,
@@ -771,6 +759,43 @@ describe(
                         .name,
                 ).toBe(
                     "アカウント名は半角英数字で入力してください。",
+                );
+
+                expect(
+                    mockValidateAccountName,
+                ).not.toHaveBeenCalled();
+            },
+        );
+
+        it(
+            "アカウント名が同じ文字のみの場合はエラーになる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                changeField(
+                    result,
+                    "name",
+                    "aaaaa",
+                );
+
+                await act(async () => {
+                    await result.current
+                        .handleAccountNameBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .name,
+                ).toBe(
+                    "アカウント名に同じ文字のみを使用することはできません。",
                 );
 
                 expect(
@@ -982,7 +1007,7 @@ describe(
                     result.current.errors
                         .password,
                 ).toBe(
-                    "パスワードは8文字以上64文字以内で入力してください。",
+                    "パスワードは5文字以上20文字以内で入力してください。",
                 );
 
                 expect(
@@ -1020,7 +1045,7 @@ describe(
                 changeField(
                     result,
                     "password",
-                    "a".repeat(64),
+                    `${"a".repeat(63)}1`,
                 );
 
                 await act(async () => {
@@ -1080,7 +1105,7 @@ describe(
                     result.current.errors
                         .password,
                 ).toBe(
-                    "パスワードは8文字以上64文字以内で入力してください。",
+                    "パスワードは5文字以上20文字以内で入力してください。",
                 );
 
                 expect(
@@ -1137,6 +1162,86 @@ describe(
                     result.current
                         .isConfirmOpen,
                 ).toBe(false);
+            },
+        );
+
+        it(
+            "パスワードが同じ文字のみの場合はフォーカス離脱時にエラーになる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                changeField(
+                    result,
+                    "password",
+                    "aaaaaaaa",
+                );
+
+                act(() => {
+                    result.current
+                        .handlePasswordBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .password,
+                ).toBe(
+                    "パスワードに同じ文字のみを使用することはできません。",
+                );
+            },
+        );
+
+        it(
+            "有効なパスワードの場合はフォーカス離脱時にpasswordエラーを削除する",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useRegisterEmployeeAccount(),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                changeField(
+                    result,
+                    "password",
+                    "aaaaaaaa",
+                );
+
+                act(() => {
+                    result.current
+                        .handlePasswordBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .password,
+                ).toBeDefined();
+
+                changeField(
+                    result,
+                    "password",
+                    "password123",
+                );
+
+                act(() => {
+                    result.current
+                        .handlePasswordBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .password,
+                ).toBeUndefined();
             },
         );
 
@@ -1517,10 +1622,6 @@ describe(
                     "担当者アカウント登録に失敗しました。",
                 );
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(false);
 
                 expect(
                     result.current.isLoading,
@@ -1593,10 +1694,6 @@ describe(
                         "パスワードが不正です。",
                 });
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(true);
 
                 expect(
                     result.current.isLoading,
@@ -1692,10 +1789,6 @@ describe(
                         .submit,
                 ).toBe(errorMessage);
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(false);
 
                 expect(
                     result.current.isLoading,
@@ -1880,10 +1973,6 @@ describe(
                         "社員一覧の取得に失敗しました。",
                 });
 
-                expect(
-                    result.current
-                        .hasValidationErrors,
-                ).toBe(true);
             },
         );
 
