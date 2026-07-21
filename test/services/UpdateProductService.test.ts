@@ -121,6 +121,25 @@ describe("UpdateProductService", () => {
         );
     });
 
+    it("在庫とカテゴリが未設定の場合は完了結果へ初期値を設定する", async () => {
+        const productWithoutRelations: Product = {
+            ...product,
+            productStock: null,
+            productCategory: null,
+        };
+        const service = new UpdateProductService(
+            createProductRepository(),
+            createCategoryRepository()
+        );
+
+        await expect(
+            service.updateProduct(productWithoutRelations)
+        ).resolves.toMatchObject({
+            stockQuantity: 0,
+            categoryUuid: "",
+        });
+    });
+
     it("更新対象が存在しない場合は404エラーを返す", async () => {
         const service = new UpdateProductService(
             createProductRepository(false),

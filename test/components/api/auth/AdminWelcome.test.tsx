@@ -7,6 +7,7 @@ import {
     render,
     screen,
 } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import {
     afterEach,
     beforeEach,
@@ -47,5 +48,18 @@ describe("AdminWelcome", () => {
         expect(
             screen.queryByText(/ようこそ/)
         ).toBeNull();
+    });
+
+    it("サーバーレンダリング時はブラウザの保存情報を参照しない", () => {
+        saveLoggedInAdmin({
+            accountUuid:
+                "10000000-0000-0000-0000-000000000001",
+            accountName: "yamada01",
+            employeeName: "山田太郎",
+        });
+
+        expect(renderToString(<AdminWelcome />)).not.toContain(
+            "山田太郎"
+        );
     });
 });

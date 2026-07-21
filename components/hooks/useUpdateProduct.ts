@@ -143,19 +143,17 @@ export const useUpdateProduct = (
 
         const initializeProduct = async () => {
             if (!isProductUuid(productUuid)) {
-                if (isActive) {
-                    setSubmitError(
-                        "指定された商品は存在しません。商品検索画面へ戻ります。"
-                    );
-                    setIsLoading(false);
-                    redirectTimer = window.setTimeout(
-                        () =>
-                            router.replace(
-                                PRODUCT_SEARCH_PATH
-                            ),
-                        1500
-                    );
-                }
+                setSubmitError(
+                    "指定された商品は存在しません。商品検索画面へ戻ります。"
+                );
+                setIsLoading(false);
+                redirectTimer = window.setTimeout(
+                    () =>
+                        router.replace(
+                            PRODUCT_SEARCH_PATH
+                        ),
+                    1500
+                );
                 return;
             }
 
@@ -167,19 +165,17 @@ export const useUpdateProduct = (
                     : storedProduct;
 
             if (!selectedProduct) {
-                if (isActive) {
-                    setSubmitError(
-                        "商品検索画面から修正する商品を選択してください。商品検索画面へ戻ります。"
-                    );
-                    setIsLoading(false);
-                    redirectTimer = window.setTimeout(
-                        () =>
-                            router.replace(
-                                PRODUCT_SEARCH_PATH
-                            ),
-                        1500
-                    );
-                }
+                setSubmitError(
+                    "商品検索画面から修正する商品を選択してください。商品検索画面へ戻ります。"
+                );
+                setIsLoading(false);
+                redirectTimer = window.setTimeout(
+                    () =>
+                        router.replace(
+                            PRODUCT_SEARCH_PATH
+                        ),
+                    1500
+                );
                 return;
             }
 

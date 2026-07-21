@@ -93,6 +93,27 @@ describe("validateUpdateProduct", () => {
         });
     });
 
+    it.each([
+        ["短すぎる商品名", "あ"],
+        ["長すぎる商品名", "あ".repeat(21)],
+    ])("%sでは文字数エラーを返す", (_name, name) => {
+        expect(
+            validateUpdateProduct(createProduct({ name })).name
+        ).toBe(
+            "商品名は2～20文字で入力してください。"
+        );
+    });
+
+    it("使用できない記号を含む商品名では文字種エラーを返す", () => {
+        expect(
+            validateUpdateProduct(
+                createProduct({ name: "ボールペン@黒" })
+            ).name
+        ).toBe(
+            "商品名は全角・半角英数字で入力してください。"
+        );
+    });
+
     it("負数と小数は数値形式エラーを返す", () => {
         const negativeResult = validateUpdateProduct(
             createProduct({
@@ -140,6 +161,17 @@ describe("validateUpdateProduct", () => {
 
         expect(result.image).toBe(
             "画像のファイルサイズは2MB以下にしてください。"
+        );
+    });
+
+    it("空の画像ファイルではエラーを返す", () => {
+        const result = validateUpdateProduct(
+            createProduct(),
+            createImageFile({ size: 0 })
+        );
+
+        expect(result.image).toBe(
+            "画像ファイルが空です。"
         );
     });
 
