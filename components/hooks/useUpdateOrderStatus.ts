@@ -643,14 +643,12 @@ export const useUpdateOrderStatus = (
                 setErrors({});
 
                 if (!orderUuid.trim()) {
-                    if (isActive) {
-                        setErrors({
-                            system:
-                                "注文IDを取得できませんでした。",
-                        });
+                    setErrors({
+                        system:
+                            "注文IDを取得できませんでした。",
+                    });
 
-                        setIsLoading(false);
-                    }
+                    setIsLoading(false);
 
                     return;
                 }
@@ -961,6 +959,11 @@ export const useUpdateOrderStatus = (
                 setConfirmedOrder(null);
                 setIsConfirmOpen(false);
                 setErrors({});
+
+                /*
+                 * 更新完了トーストを表示する。
+                 */
+                setIsToastVisible(true);
 
                 /*
                  * 更新成功後、購入履歴検索画面へ戻る。

@@ -186,6 +186,39 @@ const selectValidStatus = (
 };
 
 /**
+ * 任意のタイミングで完了できるPromiseを生成する
+ */
+const createDeferred = <T,>() => {
+    let resolve:
+        (value: T) => void =
+        () => { };
+
+    let reject:
+        (reason?: unknown) => void =
+        () => { };
+
+    const promise =
+        new Promise<T>(
+            (
+                promiseResolve,
+                promiseReject,
+            ) => {
+                resolve =
+                    promiseResolve;
+
+                reject =
+                    promiseReject;
+            },
+        );
+
+    return {
+        promise,
+        resolve,
+        reject,
+    };
+};
+
+/**
  * 確認モーダルを開く
  */
 const openConfirmModal = async (
@@ -1614,6 +1647,838 @@ describe(
                     result.current
                         .isToastVisible,
                 ).toBe(false);
+            },
+        );
+        it(
+            "数値プロパティを文字列へ変換し商品名のない明細を除外できる",
+            async () => {
+                mockFindById
+                    .mockResolvedValue({
+                        orderUuid:
+                            12345,
+                        orderDate:
+                            20260716,
+                        accountName:
+                            789,
+                        orderContent: [
+                            {
+                                product: {
+                                    name:
+                                        "A4ノート",
+                                },
+                                count:
+                                    "2",
+                            },
+                            {
+                                count: 1,
+                            },
+                        ],
+                        currentStatus: {
+                            id: "3",
+                            name:
+                                "発送準備中",
+                        },
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                expect(
+                    result.current.order,
+                ).toEqual(
+                    expect.objectContaining({
+                        orderId:
+                            "12345",
+                        orderDate:
+                            "20260716",
+                        customerAccountName:
+                            "789",
+                        orderContent:
+                            "A4ノート × 2",
+                        currentStatusId:
+                            3,
+                        currentStatusName:
+                            "発送準備中",
+                    }),
+                );
+            },
+        );
+
+        it(
+            "orderDetailsとorderStatusオブジェクトを使用して注文情報を変換できる",
+            async () => {
+                mockFindById
+                    .mockResolvedValue({
+                        orderId:
+                            orderUuid,
+                        customer: {
+                            name:
+                                "tanaka_c",
+                        },
+                        orderDetails: [
+                            {
+                                productName:
+                                    "消しゴム",
+                                quantity: 4,
+                            },
+                        ],
+                        orderStatus: {
+                            statusId: 2,
+                            statusName:
+                                "支払待ち",
+                        },
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                expect(
+                    result.current.order,
+                ).toEqual(
+                    expect.objectContaining({
+                        orderId:
+                            orderUuid,
+                        customerAccountName:
+                            "tanaka_c",
+                        orderContent:
+                            "消しゴム × 4",
+                        currentStatusId:
+                            2,
+                        currentStatusName:
+                            "支払待ち",
+                    }),
+                );
+            },
+        );
+
+        it.each([
+            [
+                "currentStatus",
+                "発送済み",
+            ],
+            [
+                "currentOrderStatus",
+                "発送準備中",
+            ],
+            [
+                "orderStatus",
+                "支払待ち",
+            ],
+            [
+                "status",
+                "配達完了",
+            ],
+        ] as const)(
+            "%sが文字列の場合は現在のステータス名として使用する",
+            async (
+                propertyName,
+                statusName,
+            ) => {
+                mockFindById
+                    .mockResolvedValue({
+                        orderId:
+                            orderUuid,
+                        orderDate:
+                            "2026/07/16 11:05:00",
+                        customerAccountName:
+                            "yamamoto_f",
+                        orderContent:
+                            "卓上電卓 × 1",
+                        currentStatusId: 4,
+                        [propertyName]:
+                            statusName,
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                expect(
+                    result.current.order
+                        ?.currentStatusName,
+                ).toBe(statusName);
+            },
+        );
+
+        it.each([
+            Infinity,
+            "",
+            "not-number",
+        ])(
+            "不正なステータスIDの場合は代替ステータスIDを使用する: %s",
+            async (
+                currentStatusId,
+            ) => {
+                mockFindById
+                    .mockResolvedValue({
+                        orderId:
+                            orderUuid,
+                        orderDate:
+                            "2026/07/16 11:05:00",
+                        customerAccountName:
+                            "yamamoto_f",
+                        orderContent:
+                            "卓上電卓 × 1",
+                        currentStatusId,
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                                2,
+                                "支払待ち",
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                expect(
+                    result.current.order
+                        ?.currentStatusId,
+                ).toBe(2);
+
+                expect(
+                    result.current.order
+                        ?.currentStatusName,
+                ).toBe("支払待ち");
+            },
+        );
+
+        it.each([
+            "invalid response",
+            [],
+        ])(
+            "入力APIがオブジェクト以外を返した場合は代替値を使用する",
+            async (
+                response,
+            ) => {
+                mockFindById
+                    .mockResolvedValue(
+                        response as unknown as
+                        UpdateOrderStatusInput,
+                    );
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                                4,
+                                "発送済み",
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                expect(
+                    result.current.order,
+                ).toEqual(
+                    expect.objectContaining({
+                        orderId:
+                            orderUuid,
+                        orderDate: "",
+                        customerAccountName:
+                            "",
+                        orderContent: "",
+                        currentStatusId:
+                            4,
+                        currentStatusName:
+                            "発送済み",
+                    }),
+                );
+            },
+        );
+
+        it(
+            "注文情報取得完了前にアンマウントされた場合は取得結果を反映しない",
+            async () => {
+                const deferred =
+                    createDeferred<
+                        UpdateOrderStatusInput |
+                        null
+                    >();
+
+                mockFindById
+                    .mockReturnValue(
+                        deferred.promise,
+                    );
+
+                const {
+                    unmount,
+                } = renderHook(
+                    () =>
+                        useUpdateOrderStatus(
+                            orderUuid,
+                        ),
+                );
+
+                await waitFor(() => {
+                    expect(
+                        mockFindById,
+                    ).toHaveBeenCalledTimes(
+                        1,
+                    );
+                });
+
+                unmount();
+
+                await act(async () => {
+                    deferred.resolve(
+                        createInputData(
+                            orderUuid,
+                        ),
+                    );
+
+                    await Promise.resolve();
+                });
+            },
+        );
+
+        it(
+            "注文情報取得エラー発生前にアンマウントされた場合はエラーを反映しない",
+            async () => {
+                const deferred =
+                    createDeferred<
+                        UpdateOrderStatusInput |
+                        null
+                    >();
+
+                mockFindById
+                    .mockReturnValue(
+                        deferred.promise,
+                    );
+
+                const {
+                    unmount,
+                } = renderHook(
+                    () =>
+                        useUpdateOrderStatus(
+                            orderUuid,
+                        ),
+                );
+
+                await waitFor(() => {
+                    expect(
+                        mockFindById,
+                    ).toHaveBeenCalledTimes(
+                        1,
+                    );
+                });
+
+                unmount();
+
+                await act(async () => {
+                    deferred.reject(
+                        new Error(
+                            "取得エラー",
+                        ),
+                    );
+
+                    await Promise.resolve();
+                    await Promise.resolve();
+                });
+            },
+        );
+
+        it(
+            "注文情報がない状態で確認モーダルを開こうとするとsubmitエラーになる",
+            async () => {
+                mockFindById
+                    .mockResolvedValue(
+                        null,
+                    );
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                act(() => {
+                    result.current
+                        .handleStatusChange(5);
+                });
+
+                await act(async () => {
+                    await result.current
+                        .openConfirmModal();
+                });
+
+                expect(
+                    result.current.errors
+                        .submit,
+                ).toBe(
+                    "注文情報を取得できませんでした。",
+                );
+
+                expect(
+                    mockConfirmStatusUpdate,
+                ).not.toHaveBeenCalled();
+
+                expect(
+                    result.current
+                        .isConfirmOpen,
+                ).toBe(false);
+            },
+        );
+
+        it(
+            "ステータス未選択で確認モーダルを開こうとすると確認APIを呼ばない",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await act(async () => {
+                    await result.current
+                        .openConfirmModal();
+                });
+
+                expect(
+                    result.current.errors
+                        .orderStatus,
+                ).toBe(
+                    "注文ステータスを選択してください。",
+                );
+
+                expect(
+                    mockConfirmStatusUpdate,
+                ).not.toHaveBeenCalled();
+
+                expect(
+                    result.current
+                        .isConfirmOpen,
+                ).toBe(false);
+            },
+        );
+
+        it(
+            "確認APIの文字列ステータスと数値プロパティを変換できる",
+            async () => {
+                mockConfirmStatusUpdate
+                    .mockResolvedValue({
+                        orderId: 12345,
+                        orderDate:
+                            20260718,
+                        accountName:
+                            67890,
+                        currentStatus:
+                            "発送済み",
+                        newStatusId:
+                            "5",
+                        newStatus:
+                            "配達完了",
+                    } as unknown as
+                        UpdateOrderStatusConfirm);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await openConfirmModal(
+                    result,
+                    5,
+                );
+
+                expect(
+                    result.current
+                        .confirmedOrder,
+                ).toEqual({
+                    orderId:
+                        "12345",
+                    orderDate:
+                        "20260718",
+                    customerAccountName:
+                        "67890",
+                    currentStatusName:
+                        "発送済み",
+                    newStatusId: 5,
+                    newStatusName:
+                        "配達完了",
+                });
+            },
+        );
+
+        it(
+            "確認APIのcurrentOrderStatusとorderStatus文字列を変換できる",
+            async () => {
+                mockConfirmStatusUpdate
+                    .mockResolvedValue({
+                        currentOrderStatus:
+                            "発送準備中",
+                        orderStatus:
+                            "キャンセル",
+                    } as unknown as
+                        UpdateOrderStatusConfirm);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await openConfirmModal(
+                    result,
+                    6,
+                );
+
+                expect(
+                    result.current
+                        .confirmedOrder,
+                ).toEqual(
+                    expect.objectContaining({
+                        currentStatusName:
+                            "発送準備中",
+                        newStatusId: 6,
+                        newStatusName:
+                            "キャンセル",
+                    }),
+                );
+            },
+        );
+
+        it(
+            "確認APIのnewStatusオブジェクトを変換できる",
+            async () => {
+                mockConfirmStatusUpdate
+                    .mockResolvedValue({
+                        currentStatus: {
+                            name:
+                                "発送済み",
+                        },
+                        newStatus: {
+                            orderStatusId:
+                                "6",
+                            orderStatusName:
+                                "キャンセル",
+                        },
+                    } as unknown as
+                        UpdateOrderStatusConfirm);
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await openConfirmModal(
+                    result,
+                    6,
+                );
+
+                expect(
+                    result.current
+                        .confirmedOrder,
+                ).toEqual(
+                    expect.objectContaining({
+                        currentStatusName:
+                            "発送済み",
+                        newStatusId: 6,
+                        newStatusName:
+                            "キャンセル",
+                    }),
+                );
+            },
+        );
+
+        it(
+            "確認APIがオブジェクト以外を返した場合は入力情報と選択値で補完する",
+            async () => {
+                mockConfirmStatusUpdate
+                    .mockResolvedValue(
+                        [] as unknown as
+                        UpdateOrderStatusConfirm,
+                    );
+
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await openConfirmModal(
+                    result,
+                    5,
+                );
+
+                expect(
+                    result.current
+                        .confirmedOrder,
+                ).toEqual({
+                    orderId:
+                        orderUuid,
+                    orderDate:
+                        "2026/07/16 11:05:00",
+                    customerAccountName:
+                        "yamamoto_f",
+                    currentStatusName:
+                        "発送済み",
+                    newStatusId: 5,
+                    newStatusName:
+                        "配達完了",
+                });
+            },
+        );
+
+        it(
+            "更新成功後にトーストを表示し3秒後に閉じる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                vi.useFakeTimers();
+
+                await openConfirmModal(
+                    result,
+                    5,
+                );
+
+                await act(async () => {
+                    await result.current
+                        .confirmUpdateStatus();
+                });
+
+                expect(
+                    result.current
+                        .isToastVisible,
+                ).toBe(true);
+
+                act(() => {
+                    vi.advanceTimersByTime(
+                        2999,
+                    );
+                });
+
+                expect(
+                    result.current
+                        .isToastVisible,
+                ).toBe(true);
+
+                act(() => {
+                    vi.advanceTimersByTime(
+                        1,
+                    );
+                });
+
+                expect(
+                    result.current
+                        .isToastVisible,
+                ).toBe(false);
+            },
+        );
+
+        it(
+            "更新成功後のトーストを手動で閉じることができる",
+            async () => {
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                await openConfirmModal(
+                    result,
+                    5,
+                );
+
+                await act(async () => {
+                    await result.current
+                        .confirmUpdateStatus();
+                });
+
+                expect(
+                    result.current
+                        .isToastVisible,
+                ).toBe(true);
+
+                act(() => {
+                    result.current
+                        .closeToast();
+                });
+
+                expect(
+                    result.current
+                        .isToastVisible,
+                ).toBe(false);
+            },
+        );
+        it(
+            "ステータスIDに対応する名前がない場合は代替ステータス名を使用する",
+            async () => {
+                // データを用意する
+                mockFindById
+                    .mockResolvedValue({
+                        orderId:
+                            orderUuid,
+                        orderDate:
+                            "2026/07/16 11:05:00",
+                        customerAccountName:
+                            "yamamoto_f",
+                        orderContent:
+                            "卓上電卓 × 1",
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                // Hookを実行する
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                                99,
+                                "独自ステータス",
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                // 代替値を検証する
+                expect(
+                    result.current.order
+                        ?.currentStatusId,
+                ).toBe(99);
+
+                expect(
+                    result.current.order
+                        ?.currentStatusName,
+                ).toBe(
+                    "独自ステータス",
+                );
+            },
+        );
+        it(
+            "ステータス名を取得できず代替値もない場合は空文字になる",
+            async () => {
+                // データを用意する
+                mockFindById
+                    .mockResolvedValue({
+                        orderId:
+                            orderUuid,
+                        orderDate:
+                            "2026/07/16 11:05:00",
+                        customerAccountName:
+                            "yamamoto_f",
+                        orderContent:
+                            "卓上電卓 × 1",
+                    } as unknown as
+                        UpdateOrderStatusInput);
+
+                // Hookを実行する
+                const { result } =
+                    renderHook(
+                        () =>
+                            useUpdateOrderStatus(
+                                orderUuid,
+                            ),
+                    );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                // ステータス情報を検証する
+                expect(
+                    result.current.order
+                        ?.currentStatusId,
+                ).toBe(0);
+
+                expect(
+                    result.current.order
+                        ?.currentStatusName,
+                ).toBe("");
             },
         );
     },
