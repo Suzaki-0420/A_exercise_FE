@@ -378,29 +378,40 @@ describe("OrdersRepository", () => {
     describe("confirmStatusUpdate", () => {
 
 
-        it("注文ステータス確認成功時は注文を返す", async () => {
+        it("注文ステータス確認成功時は確認結果を返す", async () => {
 
-            const order = createOrder();
-
+            const response = {
+                orderId: "order-uuid",
+                currentStatusName: "受付",
+                newStatusName: "発送済み",
+            };
 
             fetchMock.mockResolvedValue(
-                createResponse(order)
+                createResponse(response)
             );
 
-
             await expect(
-                repository.confirmStatusUpdate(order)
+                repository.confirmStatusUpdate(
+                    "order-uuid",
+                    2
+                )
             )
                 .resolves
-                .toEqual(order);
-
-
+                .toEqual(response);
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
                     "/proxy-api/order/status/update/confirm",
                     expect.objectContaining({
-                        method: "POST"
+                        method: "POST",
+                        credentials: "include",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            orderId: "order-uuid",
+                            newStatusId: 2,
+                        }),
                     })
                 );
         });
@@ -420,7 +431,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.confirmStatusUpdate(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -446,7 +458,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.confirmStatusUpdate(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -469,7 +482,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.confirmStatusUpdate(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -492,7 +506,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.confirmStatusUpdate(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -512,7 +527,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.confirmStatusUpdate(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -530,29 +546,37 @@ describe("OrdersRepository", () => {
     describe("updateStatus", () => {
 
 
-        it("注文ステータス更新成功時は注文を返す", async () => {
+        it("注文ステータス更新成功時は更新結果を返す", async () => {
 
-            const order = createOrder();
-
+            const response = {
+                message: "更新しました"
+            };
 
             fetchMock.mockResolvedValue(
-                createResponse(order)
+                createResponse(response)
             );
 
-
             await expect(
-                repository.updateStatus(order)
+                repository.updateStatus(
+                    "order-uuid",
+                    2
+                )
             )
                 .resolves
-                .toEqual(order);
-
-
+                .toEqual(response);
 
             expect(fetchMock)
                 .toHaveBeenCalledWith(
                     "/proxy-api/order/status/update/complete",
                     expect.objectContaining({
-                        method: "PUT"
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            orderId: "order-uuid",
+                            newStatusId: 2,
+                        }),
                     })
                 );
         });
@@ -572,7 +596,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -598,7 +623,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -621,7 +647,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -641,7 +668,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -664,7 +692,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -684,7 +713,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -707,7 +737,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -730,7 +761,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
@@ -750,7 +782,8 @@ describe("OrdersRepository", () => {
 
             await expect(
                 repository.updateStatus(
-                    createOrder()
+                    "order-uuid",
+                    2
                 )
             )
                 .rejects
