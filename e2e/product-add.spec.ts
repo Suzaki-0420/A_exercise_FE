@@ -733,18 +733,59 @@ test.describe(
             "画像を選択していない場合は必須エラーが表示される",
             async ({ page }) => {
                 const {
-                    imageInput,
+                    productNameInput,
+                    priceInput,
+                    stockInput,
+                    categorySelect,
+                    completeButton,
                 } = getFormElements(page);
 
-                await imageInput.focus();
-                await imageInput.blur();
+                /*
+                 * 画像以外は正常値を入力する
+                 */
+                await productNameInput.fill(
+                    "テスト商品"
+                );
+                await productNameInput.blur();
 
+                await priceInput.fill(
+                    "1200"
+                );
+                await priceInput.blur();
+
+                await stockInput.fill(
+                    "15"
+                );
+                await stockInput.blur();
+
+                await categorySelect.selectOption({
+                    label: TEST_CATEGORY_NAME,
+                });
+                await categorySelect.blur();
+
+                /*
+                 * 商品画像だけ未選択の状態で確認
+                 */
+                await completeButton.click();
+
+                /*
+                 * 画像必須エラー
+                 */
                 await expect(
                     page.getByText(
                         "商品画像を選択してください。",
-                        { exact: true }
+                        {
+                            exact: true,
+                        }
                     )
                 ).toBeVisible();
+
+                /*
+                 * 確認モーダルは開かない
+                 */
+                await expect(
+                    page.getByRole("dialog")
+                ).toHaveCount(0);
             }
         );
 
@@ -767,7 +808,7 @@ test.describe(
 
                 await expect(
                     page.getByText(
-                        "正しい画像形式でアップロードしてください。",
+                        "商品画像はJPEGまたはPNG形式を選択してください。",
                         { exact: true }
                     )
                 ).toBeVisible();
@@ -787,7 +828,7 @@ test.describe(
 
                 await expect(
                     page.getByText(
-                        "画像サイズは1000px以下でアップロードしてください。",
+                        "商品画像は縦横1000px以下を選択してください。",
                         { exact: true }
                     )
                 ).toBeVisible();
