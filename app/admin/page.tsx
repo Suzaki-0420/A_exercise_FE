@@ -8,14 +8,8 @@ import { redirect } from "next/navigation";
  */
 export default async function AdminMenuPage() {
     const cookieStore = await cookies();
-    const shouldBypassAdminAuth =
-        process.env.NODE_ENV === "development" &&
-        process.env.ADMIN_AUTH_BYPASS === "true";
 
-    if (
-        !shouldBypassAdminAuth &&
-        !cookieStore.has("FullnessAdminAuth")
-    ) {
+    if (!cookieStore.get("FullnessAdminAuth")?.value) {
         redirect("/admin/login");
     }
 
