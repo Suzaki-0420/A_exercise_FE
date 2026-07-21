@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, configDefaults } from 'vitest/config'
 
 export default defineConfig({
     resolve: {
@@ -50,6 +50,8 @@ export default defineConfig({
                 'infrastructures/ProductRepository.ts',
 
             ],
+
+            exclude: [...configDefaults.exclude, "e2e/**"],
 
             thresholds: {
                 lines: 100,
