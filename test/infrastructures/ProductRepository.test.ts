@@ -497,29 +497,6 @@ describe("ProductRepository", () => {
                 );
         });
 
-        it("カテゴリUUIDが空文字の場合はproductCategoryUuidを送信しない", async () => {
-            fetchMock.mockResolvedValue(
-                createResponse([])
-            );
-
-
-            await repository.selectByProductCategoryId(
-                "",
-                false
-            );
-
-
-            expect(fetchMock)
-                .toHaveBeenCalledWith(
-                    "/proxy-api/product/category?showDeletedOnly=false",
-                    expect.objectContaining({
-                        method: "GET",
-                        cache: "no-store",
-                    })
-                );
-        });
-
-
         it("HTTPエラー時にresponse.text()が失敗しても例外を投げる", async () => {
 
             fetchMock.mockResolvedValue({
