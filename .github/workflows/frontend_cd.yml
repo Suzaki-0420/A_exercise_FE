@@ -1,0 +1,230 @@
+name: Frontend CD
+
+on:
+  workflow_run:
+    workflows:
+      - "Frontend CI"
+    types:
+      - completed
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Azure VMへ実際にデプロイする"
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: frontend-cd
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DEPLOY_DIR: /var/www/fullness-web
+  SERVICE_NAME: fullness-web
+
+jobs:
+  build-and-package:
+    name: ビルドと成果物作成
+    runs-on: ubuntu-latest
+
+     # 手動実行では常にビルドする。
+     # CI後の自動実行では、デプロイ許可変数がtrueの場合だけ実行する。
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        vars.FRONTEND_DEPLOY_ENABLED == 'true'
+      )
+        
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+           # CIが確認したものと同じコミットをチェックアウトする。
+          ref: >-
+            ${{ github.event_name == 'workflow_run'
+            && github.event.workflow_run.head_sha
+            || github.sha }}
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 依存関係をインストール
+        run: npm ci
+
+      - name: Next.jsをビルド
+        run: npm run build
+        env:
+          API_BASE_URL: http://127.0.0.1:5000
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_TRUST_HOST: true
+
+      - name: standalone成果物を確認
+        run: |
+          test -f .next/standalone/server.js
+
+      - name: 成果物をまとめる
+        run: |
+          rm -rf web-publish
+          mkdir -p web-publish
+
+          cp -a .next/standalone/. web-publish/
+
+          mkdir -p web-publish/.next
+          cp -a .next/static web-publish/.next/static
+
+          if [ -d public ]; then
+            cp -a public web-publish/public
+          fi
+
+      - name: 成果物を保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-standalone
+          path: web-publish/
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    name: Azure VMへデプロイ
+    needs:
+      - build-and-package
+    runs-on: ubuntu-latest
+
+    # 実デプロイはRepository Variableがtrueの場合だけ許可する。手動実行の場合は、deployにもチェックが必要。
+    if: >-
+      vars.FRONTEND_DEPLOY_ENABLED == 'true' &&
+      (
+        github.event_name == 'workflow_run' ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          inputs.deploy
+        )
+      )
+
+    steps:
+      - name: 成果物を取得
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-standalone
+          path: web-publish
+
+      - name: SSH鍵を準備
+        run: |
+          mkdir -p ~/.ssh
+
+          printf '%s' "${{ secrets.VM_SSH_KEY }}" \
+            | tr -d '\r' \
+            > ~/.ssh/deploy_key
+
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -H \
+            "${{ secrets.VM_HOST }}" \
+            >> ~/.ssh/known_hosts
+
+      - name: 本番環境変数ファイルを作成
+        run: |
+          cat > web.env <<EOF
+          NODE_ENV=production
+          PORT=3000
+          HOSTNAME=127.0.0.1
+          API_BASE_URL=http://127.0.0.1:5000
+          AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+          AUTH_URL=http://${{ secrets.VM_HOST }}
+          AUTH_TRUST_HOST=true
+          EOF
+
+      - name: VMの一時配置場所を準備
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
+            "rm -rf /tmp/fullness-web-publish &&
+             mkdir -p /tmp/fullness-web-publish"
+
+      - name: 成果物を転送
+        run: |
+          rsync \
+            -az \
+            --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            web-publish/ \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/tmp/fullness-web-publish/"
+
+      - name: 環境変数ファイルを転送
+        run: |
+          scp \
+            -i ~/.ssh/deploy_key \
+            web.env \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/tmp/fullness-web.env"
+
+      - name: 配置してサービスを起動
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
+            "sudo install \
+                -d \
+                -o fullness \
+                -g fullness \
+                -m 755 \
+                '${{ env.DEPLOY_DIR }}' &&
+
+             sudo install \
+                -d \
+                -o root \
+                -g fullness \
+                -m 750 \
+                /etc/fullness &&
+
+             sudo install \
+                -o root \
+                -g fullness \
+                -m 640 \
+                /tmp/fullness-web.env \
+                /etc/fullness/web.env &&
+
+             sudo rsync \
+                -a \
+                --delete \
+                /tmp/fullness-web-publish/ \
+                '${{ env.DEPLOY_DIR }}/' &&
+
+             sudo chown \
+                -R \
+                fullness:fullness \
+                '${{ env.DEPLOY_DIR }}' &&
+
+             sudo systemctl restart \
+                '${{ env.SERVICE_NAME }}' &&
+
+             sleep 8 &&
+
+             sudo systemctl is-active \
+                --quiet \
+                '${{ env.SERVICE_NAME }}' &&
+
+             curl \
+                --fail \
+                --silent \
+                --show-error \
+                --output /dev/null \
+                http://127.0.0.1:3000/"
+
+      - name: 一時ファイルを削除
+        if: always()
+        run: |
+          rm -f web.env
+          rm -f ~/.ssh/deploy_key
