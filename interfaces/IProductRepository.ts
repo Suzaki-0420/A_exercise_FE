@@ -1,5 +1,4 @@
 import { Product } from "@/models/Product";
-import { ProductCategory } from "@/models/ProductCategory";
 
 /**
  * 商品Repositoryインターフェイス
@@ -48,7 +47,7 @@ export interface IProductRepository {
     /**
      * 商品を更新する
      */
-    updateById(product: Product,imageFile?: File | null): Promise<boolean>;
+    updateById(product: Product, imageFile?: File | null): Promise<boolean>;
 
     /**
      * 商品を削除する

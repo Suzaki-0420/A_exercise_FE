@@ -5,7 +5,6 @@ import {
     useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -58,12 +57,10 @@ export const ProductSearch = () => {
         isDeleteModalOpen,
         isDeleting,
         deleteError,
-        isDeleteToastVisible,
 
         openDeleteModal,
         closeDeleteModal,
         confirmDelete,
-        closeDeleteToast,
     } = useDeleteProduct();
 
     /**
@@ -100,10 +97,7 @@ export const ProductSearch = () => {
     const {
         categories,
         isLoading: isCategoriesLoading,
-        error: categoriesError,
     } = useProductCategories();
-
-
 
     /**
  * 削除確認モーダルで
@@ -210,15 +204,6 @@ export const ProductSearch = () => {
      * 現在の削除済み表示条件を維持したまま、
      * カテゴリ未指定の検索を行う。
      */
-    const handleShowAllClick = () => {
-        setDisplayMode("category");
-
-        void searchByCategory(
-            "",
-            showDeletedOnly
-        );
-    };
-
     const handleCategoryChange = (
         selectedCategoryUuid: string
     ) => {

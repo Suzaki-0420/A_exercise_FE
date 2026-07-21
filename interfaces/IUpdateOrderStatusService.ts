@@ -1,5 +1,3 @@
-import type { Orders } from
-    "@/models/Orders";
 import type {
     UpdateOrderStatusComplete,
     UpdateOrderStatusConfirm,

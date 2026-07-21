@@ -157,20 +157,6 @@ const waitForInitialLoad = async (
 };
 
 /**
- * 通信完了まで待機する
- */
-const waitForLoadingToFinish =
-    async (
-        result: HookResult,
-    ): Promise<void> => {
-        await waitFor(() => {
-            expect(
-                result.current.isLoading,
-            ).toBe(false);
-        });
-    };
-
-/**
  * 正常なステータスを選択する
  */
 const selectValidStatus = (

@@ -1,5 +1,3 @@
-import type { Product } from "@/models/Product";
-
 /**
  * 商品削除Service
  */

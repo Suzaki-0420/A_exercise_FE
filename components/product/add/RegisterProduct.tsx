@@ -17,7 +17,6 @@ export const RegisterProduct = () => {
         hasValidationErrors,
 
         isCategoriesLoading,
-        categoriesError,
 
         imageFile,
         imagePreviewUrl,

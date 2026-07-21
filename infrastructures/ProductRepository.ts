@@ -1,6 +1,5 @@
 import { IProductRepository } from "@/interfaces/IProductRepository";
 import { Product } from "@/models/Product";
-import { ProductCategory } from "@/models/ProductCategory";
 import { injectable } from "inversify";
 
 @injectable()

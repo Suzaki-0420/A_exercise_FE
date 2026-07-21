@@ -83,7 +83,7 @@ export const useSearchOrders = () => {
         useState<SearchOrdersErrors>({});
 
     const [isLoading, setIsLoading] =
-        useState(false);
+        useState(true);
 
     /**
      * 条件検索を実行したか
@@ -126,9 +126,53 @@ export const useSearchOrders = () => {
     /**
      * 初期表示時に購入履歴を全件取得する
      */
+    /**
+ * 初期表示時に購入履歴を全件取得する
+ */
     useEffect(() => {
-        void loadAllOrders();
-    }, [loadAllOrders]);
+        let isActive = true;
+
+        const initializeOrders =
+            async (): Promise<void> => {
+                try {
+                    const result =
+                        await service.findAll();
+
+                    if (!isActive) {
+                        return;
+                    }
+
+                    setOrders(result);
+                    setErrors({});
+                    setHasSearched(false);
+                } catch (error: unknown) {
+                    if (!isActive) {
+                        return;
+                    }
+
+                    const message =
+                        error instanceof Error
+                            ? error.message
+                            : "購入履歴一覧の取得に失敗しました。";
+
+                    setOrders([]);
+
+                    setErrors({
+                        system: message,
+                    });
+                } finally {
+                    if (isActive) {
+                        setIsLoading(false);
+                    }
+                }
+            };
+
+        void initializeOrders();
+
+        return () => {
+            isActive = false;
+        };
+    }, [service]);
 
     /**
      * 検索条件を検証する

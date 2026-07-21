@@ -3,7 +3,6 @@ import type { IProductCategoryRepository } from "@/interfaces/IProductCategoryRe
 import { IRegisterProductService } from "@/interfaces/IRegisterProductService";
 import { Product } from "@/models/Product";
 import { ProductCategory } from "@/models/ProductCategory";
-import { ProductStock } from "@/models/ProductStock";
 import { inject, injectable } from "inversify";
 import { TYPES } from "@/di/types";
 

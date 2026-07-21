@@ -91,6 +91,29 @@ export const useRegisterProduct = () => {
     } = useProductCategories();
 
     /**
+     * フォームエラーとカテゴリ取得エラーを
+     * 画面表示用に統合する
+     */
+    const displayErrors =
+        useMemo<ProductFormErrors>(() => {
+            const mergedErrors = {
+                ...errors,
+            };
+
+            if (categoriesError) {
+                mergedErrors.system =
+                    categoriesError;
+            } else {
+                delete mergedErrors.system;
+            }
+
+            return mergedErrors;
+        }, [
+            errors,
+            categoriesError,
+        ]);
+
+    /**
      * 選択された画像ファイル
      */
     const [imageFile, setImageFile] =
@@ -120,35 +143,7 @@ export const useRegisterProduct = () => {
     const [isToastVisible, setIsToastVisible] =
         useState(false);
 
-    /**
-    * カテゴリ一覧取得エラーを
-    * 登録フォームのシステムエラーへ反映する
-    */
-    useEffect(() => {
-        setErrors((prev) => {
-            if (categoriesError) {
 
-
-                return {
-                    ...prev,
-                    system: categoriesError,
-                };
-            }
-
-            /*
-             * カテゴリ取得が成功した場合は、
-             * カテゴリ取得に関するシステムエラーを削除する。
-             */
-            if (!prev.system) {
-                return prev;
-            }
-
-            const newErrors = { ...prev };
-            delete newErrors.system;
-
-            return newErrors;
-        });
-    }, [categoriesError]);
 
     /**
      * トーストを3秒後に閉じる
@@ -860,21 +855,20 @@ export const useRegisterProduct = () => {
      * 入力項目にバリデーションエラーがあるか
      */
     const hasValidationErrors = Boolean(
-        errors.name ||
-        errors.price ||
-        errors.stock ||
-        errors.quantity ||
-        errors.categoryUuid ||
-        errors.productCategory ||
-        errors.category ||
-        errors.image ||
-        errors.system
+        displayErrors.name ||
+        displayErrors.price ||
+        displayErrors.stock ||
+        displayErrors.quantity ||
+        displayErrors.categoryUuid ||
+        displayErrors.productCategory ||
+        displayErrors.category ||
+        displayErrors.image ||
+        displayErrors.system
     );
 
     return {
         formData,
         categories,
-        errors,
         isLoading,
         isConfirmOpen,
         isToastVisible,
@@ -883,6 +877,11 @@ export const useRegisterProduct = () => {
         // カテゴリ一覧取得の通信状態
         isCategoriesLoading,
         categoriesError,
+        /*
+             * コンポーネントには、
+             * カテゴリ取得エラーを統合した値を返す。
+             */
+        errors: displayErrors,
 
         imageFile,
         imagePreviewUrl,
