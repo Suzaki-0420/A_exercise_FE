@@ -13,6 +13,8 @@ type ProductResponse = {
     productUuid: string;
     name: string;
     price: number;
+    deleteFlg?: number;
+    imageUrl?: string;
     productCategory?: {
         categoryUuid: string;
         name: string;
@@ -41,6 +43,12 @@ const DELETE_ERROR_MESSAGE =
     "商品削除E2Eテスト用エラーです。";
 
 /**
+ * 削除対象商品のカテゴリ情報。
+ */
+let targetCategoryName = "";
+let targetCategoryUuid = "";
+
+/**
  * テスト中に作成した商品の情報。
  */
 let targetProductName = "";
@@ -51,15 +59,15 @@ let deletedByUi = false;
 /**
  * 商品カードを取得する。
  *
- * ガイドに記載されているshadcn/uiの
- * data-slot属性と商品名の見出しを使用する。
+ * ProductCardにはdata-testid="product-card"が付与され、
+ * 商品名はh3要素で表示される。
  */
 const getProductCard = (
     page: Page,
     productName: string,
 ): Locator => {
     return page
-        .locator("[data-slot='card']")
+        .getByTestId("product-card")
         .filter({
             has: page.getByRole("heading", {
                 name: productName,
@@ -81,7 +89,348 @@ const getDeleteButton = (
 };
 
 /**
- * 商品の削除確認モーダルを開く。
+ * 商品削除APIへのリクエストかを判定する。
+ *
+ * DELETE /proxy-api/product/delete/{productUuid}
+ */
+const isDeleteProductRequest = (
+    request: Request,
+): boolean => {
+    if (request.method() !== "DELETE") {
+        return false;
+    }
+
+    const pathname =
+        new URL(request.url()).pathname;
+
+    return /\/proxy-api\/product\/delete\/[^/]+$/
+        .test(pathname);
+};
+
+/**
+ * 商品一覧画面の初回表示で行われる、
+ * 「すべてのカテゴリ・通常商品」の検索レスポンスを待つ。
+ *
+ * ProductSearchではuseEffectから初回検索が開始されるため、
+ * その完了前にSelectを開くと、再レンダーによって
+ * 選択肢が閉じることがある。
+ */
+const waitForInitialCategorySearchResponse = (
+    page: Page,
+) => {
+    return page.waitForResponse(
+        (response) => {
+            if (
+                response.request().method() !== "GET"
+            ) {
+                return false;
+            }
+
+            const url =
+                new URL(response.url());
+
+            const categoryUuid =
+                url.searchParams.get(
+                    "productCategoryUuid",
+                ) ?? "";
+
+            return (
+                url.pathname ===
+                "/proxy-api/product/category" &&
+                categoryUuid === "" &&
+                url.searchParams.get(
+                    "showDeletedOnly",
+                ) === "false"
+            );
+        },
+    );
+};
+
+/**
+ * 選択したカテゴリの検索APIレスポンスを待つ。
+ *
+ * @param page PlaywrightのPage
+ * @param showDeletedOnly 削除済みのみ表示するか
+ */
+const waitForCategorySearchResponse = (
+    page: Page,
+    showDeletedOnly: boolean,
+) => {
+    return page.waitForResponse(
+        (response) => {
+            if (
+                response.request().method() !== "GET"
+            ) {
+                return false;
+            }
+
+            const url =
+                new URL(response.url());
+
+            return (
+                url.pathname ===
+                "/proxy-api/product/category" &&
+                url.searchParams.get(
+                    "productCategoryUuid",
+                ) === targetCategoryUuid &&
+                url.searchParams.get(
+                    "showDeletedOnly",
+                ) === String(showDeletedOnly)
+            );
+        },
+    );
+};
+
+/**
+ * カテゴリ検索タブを表示する。
+ */
+const openCategorySearchTab = async (
+    page: Page,
+): Promise<void> => {
+    const categoryTab =
+        page.getByRole("tab", {
+            name: "カテゴリ検索",
+            exact: true,
+        });
+
+    await expect(categoryTab)
+        .toBeVisible();
+
+    if (
+        await categoryTab.getAttribute(
+            "aria-selected",
+        ) !== "true"
+    ) {
+        await categoryTab.click();
+    }
+
+    await expect(categoryTab)
+        .toHaveAttribute(
+            "aria-selected",
+            "true",
+        );
+};
+
+/**
+ * カテゴリ検索タブで、
+ * E2E商品のカテゴリを選択する。
+ */
+const selectTargetCategory = async (
+    page: Page,
+): Promise<void> => {
+    await openCategorySearchTab(page);
+
+    /**
+     * CategorySearchFormのSelectTriggerには
+     * aria-label="商品カテゴリ"が設定されている。
+     */
+    const categorySelect =
+        page.getByRole("combobox", {
+            name: "商品カテゴリ",
+            exact: true,
+        });
+
+    await expect(categorySelect)
+        .toBeVisible();
+
+    await expect(categorySelect)
+        .toBeEnabled({
+            timeout: 15_000,
+        });
+
+    const categoryOption =
+        page.getByRole("option", {
+            name: targetCategoryName,
+            exact: true,
+        });
+
+    /**
+     * 初回検索やカテゴリ一覧取得の完了直後は、
+     * Selectの再レンダーとクリックが競合することがある。
+     * 対象optionが表示されるまでSelectを開き直す。
+     */
+    await expect(
+        async () => {
+            if (
+                !await categoryOption
+                    .isVisible()
+                    .catch(() => false)
+            ) {
+                await page.keyboard.press(
+                    "Escape",
+                );
+
+                await expect(categorySelect)
+                    .toBeEnabled({
+                        timeout: 5_000,
+                    });
+
+                await categorySelect.click();
+            }
+
+            await expect(categoryOption)
+                .toBeVisible({
+                    timeout: 2_000,
+                });
+        },
+    ).toPass({
+        timeout: 15_000,
+        intervals: [
+            500,
+            1_000,
+            2_000,
+        ],
+    });
+
+    /**
+     * 選択操作より前にレスポンス待機を登録する。
+     */
+    const responsePromise =
+        waitForCategorySearchResponse(
+            page,
+            false,
+        );
+
+    await categoryOption.click();
+
+    const response =
+        await responsePromise;
+
+    expect(response.ok())
+        .toBe(true);
+
+    /**
+     * APIレスポンスにおける対象商品の状態を検証する。
+     *
+     * 削除前:
+     * 通常商品APIにE2E商品が含まれる。
+     *
+     * 削除後:
+     * 通常商品APIにE2E商品が含まれない。
+     */
+    const categoryProducts:
+        ProductResponse[] =
+        await response.json();
+
+    const containsTargetProduct =
+        categoryProducts.some(
+            (product: ProductResponse) =>
+                product.name ===
+                targetProductName,
+        );
+
+    if (deletedByUi) {
+        expect(
+            containsTargetProduct,
+            `削除後の通常商品APIに「${targetProductName}」が残っています。`,
+        ).toBe(false);
+    } else {
+        expect(
+            containsTargetProduct,
+            `カテゴリ検索APIの結果に「${targetProductName}」が含まれていません。`,
+        ).toBe(true);
+    }
+
+    const deletedCheckbox =
+        page.getByRole("checkbox", {
+            name: "削除済み",
+            exact: true,
+        });
+
+    await expect(deletedCheckbox)
+        .toBeVisible();
+
+    await expect(deletedCheckbox)
+        .toBeEnabled();
+
+    await expect(deletedCheckbox)
+        .not.toBeChecked();
+};
+
+/**
+ * 選択中のカテゴリについて、
+ * 削除済み商品のみを表示する。
+ */
+const showDeletedProducts = async (
+    page: Page,
+): Promise<void> => {
+    const deletedCheckbox =
+        page.getByRole("checkbox", {
+            name: "削除済み",
+            exact: true,
+        });
+
+    await expect(deletedCheckbox)
+        .toBeVisible();
+
+    await expect(deletedCheckbox)
+        .toBeEnabled();
+
+    if (await deletedCheckbox.isChecked()) {
+        return;
+    }
+
+    const responsePromise =
+        waitForCategorySearchResponse(
+            page,
+            true,
+        );
+
+    await deletedCheckbox.check();
+
+    const response =
+        await responsePromise;
+
+    expect(response.ok())
+        .toBe(true);
+
+    await expect(deletedCheckbox)
+        .toBeChecked();
+};
+
+/**
+ * 選択中のカテゴリについて、
+ * 削除されていない商品を表示する。
+ */
+const showActiveProducts = async (
+    page: Page,
+): Promise<void> => {
+    const deletedCheckbox =
+        page.getByRole("checkbox", {
+            name: "削除済み",
+            exact: true,
+        });
+
+    await expect(deletedCheckbox)
+        .toBeVisible();
+
+    await expect(deletedCheckbox)
+        .toBeEnabled();
+
+    if (!await deletedCheckbox.isChecked()) {
+        return;
+    }
+
+    const responsePromise =
+        waitForCategorySearchResponse(
+            page,
+            false,
+        );
+
+    await deletedCheckbox.uncheck();
+
+    const response =
+        await responsePromise;
+
+    expect(response.ok())
+        .toBe(true);
+
+    await expect(deletedCheckbox)
+        .not.toBeChecked();
+};
+
+/**
+ * 商品削除確認モーダルを開く。
  */
 const openDeleteDialog = async (
     page: Page,
@@ -93,139 +442,38 @@ const openDeleteDialog = async (
             productName,
         );
 
-    await expect(
-        productCard,
-    ).toBeVisible();
+    await expect(productCard)
+        .toBeVisible();
 
     const deleteButton =
-        getDeleteButton(
-            productCard,
-        );
+        getDeleteButton(productCard);
 
-    await expect(
-        deleteButton,
-    ).toBeVisible();
+    await expect(deleteButton)
+        .toBeVisible();
 
     await deleteButton.click();
 
     /**
-     * 削除確認にはAlertDialogを使用している想定。
-     * dialogではなくalertdialogとして取得する。
+     * ProductSearchのモーダルは
+     * role="dialog"で実装されている。
      */
     const dialog =
-        page.getByRole(
-            "alertdialog",
-        );
+        page.getByRole("dialog");
 
-    await expect(
-        dialog,
-    ).toBeVisible();
+    await expect(dialog)
+        .toBeVisible();
 
     return dialog;
 };
 
 /**
- * 商品一覧を検索する。
- */
-const clickSearchButton = async (
-    page: Page,
-): Promise<void> => {
-    await page
-        .getByRole("button", {
-            name: "検索",
-            exact: true,
-        })
-        .click();
-};
-
-/**
- * 削除済み商品のみを表示する。
+ * 商品カードに表示されている情報を取得する。
  *
- * showDeletedOnly=trueで検索される画面操作を再現する。
- */
-const showDeletedProducts = async (
-    page: Page,
-): Promise<void> => {
-    const deletedCheckbox =
-        page.getByRole("checkbox", {
-            name: "削除済み",
-            exact: true,
-        });
-
-    await expect(
-        deletedCheckbox,
-    ).toBeVisible();
-
-    if (
-        !await deletedCheckbox.isChecked()
-    ) {
-        await deletedCheckbox.check();
-    }
-
-    await clickSearchButton(page);
-};
-
-/**
- * 通常商品のみを表示する。
- *
- * showDeletedOnly=falseで検索される画面操作を再現する。
- */
-const showActiveProducts = async (
-    page: Page,
-): Promise<void> => {
-    const deletedCheckbox =
-        page.getByRole("checkbox", {
-            name: "削除済み",
-            exact: true,
-        });
-
-    await expect(
-        deletedCheckbox,
-    ).toBeVisible();
-
-    if (
-        await deletedCheckbox.isChecked()
-    ) {
-        await deletedCheckbox.uncheck();
-    }
-
-    await clickSearchButton(page);
-};
-
-/**
- * 商品削除APIへのリクエストかを判定する。
- *
- * 実際のRepository:
- * DELETE /proxy-api/product/delete/{productUuid}
- */
-const isDeleteProductRequest = (
-    request: Request,
-): boolean => {
-    if (
-        request.method() !== "DELETE"
-    ) {
-        return false;
-    }
-
-    const pathname =
-        new URL(
-            request.url(),
-        ).pathname;
-
-    return (
-        /\/proxy-api\/product\/delete\/[^/]+$/
-            .test(pathname)
-    );
-};
-
-/**
- * 商品カードに表示されている情報を比較可能な文字列へ変換する。
- *
- * 削除前と削除後で異なる操作ボタンや状態表示は除外する。
+ * 削除前後で変わる操作ボタンは除外する。
  */
 const getProductCardInformation = async (
     productCard: Locator,
-): Promise<string> => {
+): Promise<string[]> => {
     const cardText =
         await productCard.innerText();
 
@@ -243,14 +491,9 @@ const getProductCardInformation = async (
         )
         .filter(
             (text) =>
-                ![
-                    "変更",
-                    "修正",
-                    "削除",
-                    "削除済み",
-                ].includes(text),
-        )
-        .join("|");
+                !/^(更新|変更|修正|削除)$/
+                    .test(text),
+        );
 };
 
 /**
@@ -265,26 +508,18 @@ test.describe.serial(
         /**
          * E2Eテスト専用商品を作成する。
          *
-         * chromiumプロジェクトで読み込んだ
-         * e2e/.auth/admin.jsonの認証状態が
-         * requestフィクスチャにも使用される。
+         * auth.setup.tsで保存した認証状態を
+         * requestフィクスチャも使用する。
          */
         test.beforeAll(
             async ({ request }) => {
-                /**
-                 * 登録に使用できる実在カテゴリを取得する。
-                 *
-                 * 固定のカテゴリUUIDには依存しない。
-                 */
                 const productResponse =
                     await request.get(
                         "/proxy-api/product/category" +
                         "?showDeletedOnly=false",
                     );
 
-                if (
-                    !productResponse.ok()
-                ) {
+                if (!productResponse.ok()) {
                     throw new Error(
                         "商品一覧の取得に失敗しました。" +
                         ` status=${productResponse.status()}` +
@@ -292,28 +527,33 @@ test.describe.serial(
                     );
                 }
 
-                const products: ProductResponse[] =
+                const products:
+                    ProductResponse[] =
                     await productResponse.json();
 
                 /**
-                 * カテゴリ情報を持つ実在商品を選択する。
+                 * カテゴリ情報を持つ通常商品を1件取得する。
                  */
                 const sourceProduct:
                     ProductResponse | undefined =
                     products.find(
-                        (product: ProductResponse) =>
+                        (
+                            product:
+                                ProductResponse,
+                        ) =>
                             Boolean(
-                                product.productCategory
-                                    ?.categoryUuid
-                                && product.productCategory
+                                product
+                                    .productCategory
+                                    ?.categoryUuid &&
+                                product
+                                    .productCategory
                                     ?.name,
                             ),
                     );
 
                 if (
-                    !sourceProduct
-                    || !sourceProduct
-                        .productCategory
+                    !sourceProduct ||
+                    !sourceProduct.productCategory
                 ) {
                     throw new Error(
                         "テスト商品を登録するための" +
@@ -322,10 +562,20 @@ test.describe.serial(
                 }
 
                 /**
-                 * 削除対象外の商品として使用する。
+                 * 削除対象外の比較商品として使用する。
                  */
                 comparisonProductName =
                     sourceProduct.name;
+
+                targetCategoryName =
+                    sourceProduct
+                        .productCategory
+                        .name;
+
+                targetCategoryUuid =
+                    sourceProduct
+                        .productCategory
+                        .categoryUuid;
 
                 /**
                  * 商品名の上限20文字以内で、
@@ -334,8 +584,7 @@ test.describe.serial(
                 targetProductName =
                     `E2E削除${Date.now()
                         .toString()
-                        .slice(-8)
-                    }`;
+                        .slice(-8)}`;
 
                 const registerResponse =
                     await request.post(
@@ -349,13 +598,9 @@ test.describe.serial(
                                 stock:
                                     "7",
                                 categoryUuid:
-                                    sourceProduct
-                                        .productCategory
-                                        .categoryUuid,
+                                    targetCategoryUuid,
                                 categoryName:
-                                    sourceProduct
-                                        .productCategory
-                                        .name,
+                                    targetCategoryName,
                                 image: {
                                     name:
                                         "e2e-delete.png",
@@ -368,9 +613,7 @@ test.describe.serial(
                         },
                     );
 
-                if (
-                    !registerResponse.ok()
-                ) {
+                if (!registerResponse.ok()) {
                     throw new Error(
                         "E2E専用商品の登録に失敗しました。" +
                         ` status=${registerResponse.status()}` +
@@ -378,11 +621,15 @@ test.describe.serial(
                     );
                 }
 
-                const createdProduct: ProductResponse =
+                const createdProduct:
+                    ProductResponse =
                     await registerResponse.json();
 
                 targetProductUuid =
                     createdProduct.productUuid;
+
+                expect(targetProductUuid)
+                    .not.toBe("");
             },
         );
 
@@ -393,8 +640,8 @@ test.describe.serial(
         test.afterAll(
             async ({ request }) => {
                 if (
-                    !targetProductUuid
-                    || deletedByUi
+                    !targetProductUuid ||
+                    deletedByUi
                 ) {
                     return;
                 }
@@ -403,17 +650,15 @@ test.describe.serial(
                     await request.delete(
                         `/proxy-api/product/delete/${encodeURIComponent(
                             targetProductUuid,
-                        )
-                        }`,
+                        )}`,
                     );
 
                 /**
                  * すでに削除されている404は問題にしない。
                  */
                 if (
-                    !deleteResponse.ok()
-                    && deleteResponse.status()
-                    !== 404
+                    !deleteResponse.ok() &&
+                    deleteResponse.status() !== 404
                 ) {
                     console.error(
                         "E2E専用商品の後始末に失敗しました。",
@@ -424,73 +669,147 @@ test.describe.serial(
         );
 
         /**
-         * 各テストは商品一覧画面から開始する。
+         * 各テストは認証済みの商品一覧画面から開始する。
          */
         test.beforeEach(
             async ({ page }) => {
+                /**
+                 * page.gotoより前に待機を登録し、
+                 * ProductSearchのuseEffectによる初回検索を確実に待つ。
+                 */
+                const initialSearchResponsePromise =
+                    waitForInitialCategorySearchResponse(
+                        page,
+                    );
+
                 await page.goto(
                     "/admin/product",
                 );
 
-                await expect(
-                    page,
-                ).toHaveURL(
-                    "/admin/product",
-                );
+                await expect(page)
+                    .toHaveURL(
+                        "/admin/product",
+                    );
 
                 await expect(
                     page.getByRole(
                         "heading",
                         {
                             name:
-                                /商品検索|商品情報メンテナンス/,
+                                "商品検索",
+                            exact: true,
                         },
                     ),
                 ).toBeVisible();
+
+                const initialSearchResponse =
+                    await initialSearchResponsePromise;
+
+                expect(
+                    initialSearchResponse.ok(),
+                    "商品一覧画面の初回検索に失敗しました。",
+                ).toBe(true);
+
+                await expect(
+                    page.getByText(
+                        "商品を取得しています...",
+                        {
+                            exact: true,
+                        },
+                    ),
+                ).toBeHidden();
+
+                await expect(
+                    page.getByRole(
+                        "combobox",
+                        {
+                            name:
+                                "商品カテゴリ",
+                            exact: true,
+                        },
+                    ),
+                ).toBeEnabled({
+                    timeout: 15_000,
+                });
             },
         );
 
         test(
             "ログイン済みの担当者が商品一覧画面を表示できる",
             async ({ page }) => {
-                /**
- * 商品一覧の検索条件が表示されることを確認する。
- *
- * shadcn/uiのSelectは、
- * role="combobox"として公開される。
- */
-                await expect(
-                    page.getByRole(
-                        "combobox",
-                    ).first(),
-                ).toBeVisible();
+                const categoryTab =
+                    page.getByRole("tab", {
+                        name: "カテゴリ検索",
+                        exact: true,
+                    });
 
-                await expect(
-                    page.getByRole(
-                        "button",
-                        {
-                            name: "検索",
-                            exact: true,
-                        },
-                    ),
-                ).toBeVisible();
+                const keywordTab =
+                    page.getByRole("tab", {
+                        name: "キーワード検索",
+                        exact: true,
+                    });
+
+                await expect(categoryTab)
+                    .toBeVisible();
+
+                await expect(keywordTab)
+                    .toBeVisible();
+
+                await expect(categoryTab)
+                    .toHaveAttribute(
+                        "aria-selected",
+                        "true",
+                    );
 
                 /**
-                 * 初期状態では削除済み検索がOFFである。
+                 * 初期表示では「すべてのカテゴリ」が選択されている。
                  */
                 await expect(
+                    page.getByRole("combobox", {
+                        name: "商品カテゴリ",
+                        exact: true,
+                    }),
+                ).toContainText(
+                    "すべてのカテゴリ",
+                );
+
+                /**
+                 * カテゴリ未指定時もチェックボックスは表示されるが、
+                 * 無効で未チェックである。
+                 */
+                const deletedCheckbox =
                     page.getByRole(
                         "checkbox",
                         {
-                            name:
-                                "削除済み",
+                            name: "削除済み",
                             exact: true,
                         },
-                    ),
-                ).not.toBeChecked();
+                    );
+
+                await expect(deletedCheckbox)
+                    .toBeVisible();
+
+                await expect(deletedCheckbox)
+                    .toBeDisabled();
+
+                await expect(deletedCheckbox)
+                    .not.toBeChecked();
+
+                await selectTargetCategory(page);
 
                 /**
-                 * 登録した削除対象商品が表示される。
+                 * カテゴリ選択後は操作可能になり、
+                 * 初期状態は未チェックである。
+                 */
+                await expect(deletedCheckbox)
+                    .toBeEnabled();
+
+                await expect(deletedCheckbox)
+                    .not.toBeChecked();
+
+                /**
+                 * 選択カテゴリの商品一覧に、
+                 * E2E商品が表示される。
                  */
                 const targetCard =
                     getProductCard(
@@ -498,9 +817,8 @@ test.describe.serial(
                         targetProductName,
                     );
 
-                await expect(
-                    targetCard,
-                ).toBeVisible();
+                await expect(targetCard)
+                    .toBeVisible();
 
                 /**
                  * 削除対象商品に削除ボタンが表示される。
@@ -512,7 +830,7 @@ test.describe.serial(
                 ).toBeVisible();
 
                 /**
-                 * 削除対象ではない商品も表示される。
+                 * 同じカテゴリの比較商品も表示される。
                  */
                 await expect(
                     getProductCard(
@@ -526,28 +844,36 @@ test.describe.serial(
         test(
             "削除ボタンを押すと確認モーダルの内容が正しく表示される",
             async ({ page }) => {
+                await selectTargetCategory(page);
+
                 const dialog =
                     await openDeleteDialog(
                         page,
                         targetProductName,
                     );
 
-                /**
-                 * 確認モーダルの見出しを確認する。
-                 */
                 await expect(
                     dialog.getByRole(
                         "heading",
                         {
                             name:
-                                "商品を削除しますか？",
+                                "商品削除の確認",
+                            exact: true,
+                        },
+                    ),
+                ).toBeVisible();
+
+                await expect(
+                    dialog.getByText(
+                        "以下の商品を削除しますか？",
+                        {
                             exact: true,
                         },
                     ),
                 ).toBeVisible();
 
                 /**
-                 * 削除対象の商品名が表示される。
+                 * 削除対象の商品情報が表示される。
                  */
                 await expect(
                     dialog.getByText(
@@ -557,6 +883,14 @@ test.describe.serial(
                         },
                     ),
                 ).toBeVisible();
+
+                await expect(dialog)
+                    .toContainText("1,234円");
+
+                await expect(dialog)
+                    .toContainText(
+                        targetCategoryName,
+                    );
 
                 /**
                  * 削除対象ではない商品名は表示されない。
@@ -570,15 +904,12 @@ test.describe.serial(
                     ),
                 ).toHaveCount(0);
 
-                /**
-                 * 削除ボタンとキャンセルボタンが表示される。
-                 */
                 await expect(
                     dialog.getByRole(
                         "button",
                         {
                             name:
-                                "削除",
+                                "削除する",
                             exact: true,
                         },
                     ),
@@ -600,19 +931,25 @@ test.describe.serial(
         test(
             "確認モーダルでキャンセルすると商品は削除されない",
             async ({ page }) => {
+                await selectTargetCategory(page);
+
                 let deleteRequestCount = 0;
+
+                const countDeleteRequest = (
+                    request: Request,
+                ): void => {
+                    if (
+                        isDeleteProductRequest(
+                            request,
+                        )
+                    ) {
+                        deleteRequestCount++;
+                    }
+                };
 
                 page.on(
                     "request",
-                    (request) => {
-                        if (
-                            isDeleteProductRequest(
-                                request,
-                            )
-                        ) {
-                            deleteRequestCount++;
-                        }
-                    },
+                    countDeleteRequest,
                 );
 
                 const dialog =
@@ -632,23 +969,12 @@ test.describe.serial(
                     )
                     .click();
 
-                /**
-                 * モーダルが閉じる。
-                 */
-                await expect(
-                    dialog,
-                ).toBeHidden();
+                await expect(dialog)
+                    .toBeHidden();
 
-                /**
-                 * キャンセル時は削除APIが呼ばれない。
-                 */
-                expect(
-                    deleteRequestCount,
-                ).toBe(0);
+                expect(deleteRequestCount)
+                    .toBe(0);
 
-                /**
-                 * 通常一覧に商品が残る。
-                 */
                 await expect(
                     getProductCard(
                         page,
@@ -656,12 +982,7 @@ test.describe.serial(
                     ),
                 ).toBeVisible();
 
-                /**
-                 * 削除済み一覧には表示されない。
-                 */
-                await showDeletedProducts(
-                    page,
-                );
+                await showDeletedProducts(page);
 
                 await expect(
                     getProductCard(
@@ -669,15 +990,20 @@ test.describe.serial(
                         targetProductName,
                     ),
                 ).toHaveCount(0);
+
+                page.off(
+                    "request",
+                    countDeleteRequest,
+                );
             },
         );
 
         test(
             "削除処理中は二重送信されず、失敗時はエラーが表示される",
             async ({ page }) => {
-                let releaseRequest:
-                    (() => void)
-                    | undefined;
+                await selectTargetCategory(page);
+
+                let releaseRequest!: () => void;
 
                 const requestGate =
                     new Promise<void>(
@@ -689,23 +1015,23 @@ test.describe.serial(
 
                 let deleteRequestCount = 0;
 
+                const countDeleteRequest = (
+                    request: Request,
+                ): void => {
+                    if (
+                        isDeleteProductRequest(
+                            request,
+                        )
+                    ) {
+                        deleteRequestCount++;
+                    }
+                };
+
                 page.on(
                     "request",
-                    (request) => {
-                        if (
-                            isDeleteProductRequest(
-                                request,
-                            )
-                        ) {
-                            deleteRequestCount++;
-                        }
-                    },
+                    countDeleteRequest,
                 );
 
-                /**
-                 * DELETEリクエストを一時停止して、
-                 * 削除中の画面状態を確認する。
-                 */
                 await page.route(
                     "**/proxy-api/product/delete/**",
                     async (route) => {
@@ -735,29 +1061,43 @@ test.describe.serial(
                         "button",
                         {
                             name:
-                                "削除",
+                                "削除する",
                             exact: true,
                         },
                     )
                     .click();
 
                 /**
-                 * 削除中は削除ボタンが無効になるため、
-                 * 連続クリックできない。
+                 * 削除中は文言が「削除中...」へ変わり、
+                 * 削除・キャンセルの両方が無効になる。
                  */
+                const deletingButton =
+                    dialog.getByRole(
+                        "button",
+                        {
+                            name:
+                                "削除中...",
+                            exact: true,
+                        },
+                    );
+
+                await expect(deletingButton)
+                    .toBeVisible();
+
+                await expect(deletingButton)
+                    .toBeDisabled();
+
                 await expect(
                     dialog.getByRole(
                         "button",
                         {
                             name:
-                                /削除/,
+                                "キャンセル",
+                            exact: true,
                         },
                     ),
                 ).toBeDisabled();
 
-                /**
-                 * 削除APIは1回だけ呼ばれる。
-                 */
                 await expect
                     .poll(
                         () =>
@@ -765,44 +1105,37 @@ test.describe.serial(
                     )
                     .toBe(1);
 
-                /**
-                 * APIを500エラーで終了させる。
-                 */
-                releaseRequest?.();
+                releaseRequest();
 
-                /**
-                 * Repositoryが返したエラーメッセージが表示される。
-                 */
                 await expect(
-                    dialog.getByText(
-                        DELETE_ERROR_MESSAGE,
-                        {
-                            exact: true,
-                        },
+                    dialog.getByRole(
+                        "alert",
                     ),
-                ).toBeVisible();
+                ).toContainText(
+                    DELETE_ERROR_MESSAGE,
+                );
 
-                /**
-                 * 失敗時はdeleteTargetが残るため、
-                 * モーダルは閉じない。
-                 */
-                await expect(
-                    dialog,
-                ).toBeVisible();
+                await expect(dialog)
+                    .toBeVisible();
 
-                expect(
-                    deleteRequestCount,
-                ).toBe(1);
+                expect(deleteRequestCount)
+                    .toBe(1);
 
                 await page.unroute(
                     "**/proxy-api/product/delete/**",
                 );
 
+                page.off(
+                    "request",
+                    countDeleteRequest,
+                );
+
                 /**
-                 * 実際のAPIで一覧を再取得し、
-                 * 商品が削除されていないことを確認する。
+                 * 実APIで再取得しても商品は削除されていない。
                  */
                 await page.reload();
+
+                await selectTargetCategory(page);
 
                 await expect(
                     getProductCard(
@@ -811,9 +1144,7 @@ test.describe.serial(
                     ),
                 ).toBeVisible();
 
-                await showDeletedProducts(
-                    page,
-                );
+                await showDeletedProducts(page);
 
                 await expect(
                     getProductCard(
@@ -827,6 +1158,8 @@ test.describe.serial(
         test(
             "商品を正常に論理削除し削除済み一覧で確認できる",
             async ({ page }) => {
+                await selectTargetCategory(page);
+
                 const targetCardBeforeDelete =
                     getProductCard(
                         page,
@@ -837,13 +1170,14 @@ test.describe.serial(
                     targetCardBeforeDelete,
                 ).toBeVisible();
 
-                /**
-                 * 削除前の商品情報を保存する。
-                 */
                 const informationBeforeDelete =
                     await getProductCardInformation(
                         targetCardBeforeDelete,
                     );
+
+                expect(
+                    informationBeforeDelete.length,
+                ).toBeGreaterThan(0);
 
                 const dialog =
                     await openDeleteDialog(
@@ -851,18 +1185,31 @@ test.describe.serial(
                         targetProductName,
                     );
 
+                let deleteRequestCount = 0;
+
+                const countDeleteRequest = (
+                    request: Request,
+                ): void => {
+                    if (
+                        isDeleteProductRequest(
+                            request,
+                        )
+                    ) {
+                        deleteRequestCount++;
+                    }
+                };
+
+                page.on(
+                    "request",
+                    countDeleteRequest,
+                );
+
                 const deleteResponsePromise =
                     page.waitForResponse(
                         (response) =>
-                            response.request()
-                                .method()
-                            === "DELETE"
-                            && /\/proxy-api\/product\/delete\/[^/]+$/
-                                .test(
-                                    new URL(
-                                        response.url(),
-                                    ).pathname,
-                                ),
+                            isDeleteProductRequest(
+                                response.request(),
+                            ),
                     );
 
                 await dialog
@@ -870,7 +1217,7 @@ test.describe.serial(
                         "button",
                         {
                             name:
-                                "削除",
+                                "削除する",
                             exact: true,
                         },
                     )
@@ -879,31 +1226,34 @@ test.describe.serial(
                 const deleteResponse =
                     await deleteResponsePromise;
 
-                expect(
-                    deleteResponse.ok(),
-                ).toBe(true);
+                expect(deleteResponse.ok())
+                    .toBe(true);
+
+                await expect
+                    .poll(
+                        () =>
+                            deleteRequestCount,
+                    )
+                    .toBe(1);
 
                 deletedByUi = true;
 
-                /**
-                 * 正常終了時はモーダルが閉じる。
-                 */
-                await expect(
-                    dialog,
-                ).toBeHidden();
+                await expect(dialog)
+                    .toBeHidden();
 
                 /**
-                 * 削除完了トーストが表示される。
+                 * この検証にはProductSearch側で
+                 * isDeleteToastVisibleを描画する実装が必要。
                  */
                 await expect(
                     page.getByText(
-                        /商品を削除しました。|削除が完了しました。/,
+                        "商品を削除しました。",
+                        {
+                            exact: true,
+                        },
                     ),
                 ).toBeVisible();
 
-                /**
-                 * 通常一覧から削除対象商品が消える。
-                 */
                 await expect(
                     getProductCard(
                         page,
@@ -911,9 +1261,6 @@ test.describe.serial(
                     ),
                 ).toHaveCount(0);
 
-                /**
-                 * 削除対象ではない商品は通常一覧に残る。
-                 */
                 await expect(
                     getProductCard(
                         page,
@@ -921,12 +1268,7 @@ test.describe.serial(
                     ),
                 ).toBeVisible();
 
-                /**
-                 * 削除済み商品のみを表示する。
-                 */
-                await showDeletedProducts(
-                    page,
-                );
+                await showDeletedProducts(page);
 
                 const deletedProductCard =
                     getProductCard(
@@ -934,16 +1276,10 @@ test.describe.serial(
                         targetProductName,
                     );
 
-                /**
-                 * 削除済み一覧に削除対象商品が表示される。
-                 */
                 await expect(
                     deletedProductCard,
                 ).toBeVisible();
 
-                /**
-                 * 表示された商品名が削除対象と一致する。
-                 */
                 await expect(
                     deletedProductCard
                         .getByRole(
@@ -957,8 +1293,32 @@ test.describe.serial(
                 ).toBeVisible();
 
                 /**
-                 * 削除対象ではない商品は削除済みにならない。
+                 * 削除済みカードでは更新・削除ボタンが表示されない。
                  */
+                await expect(
+                    deletedProductCard
+                        .getByRole(
+                            "button",
+                            {
+                                name:
+                                    "更新",
+                                exact: true,
+                            },
+                        ),
+                ).toHaveCount(0);
+
+                await expect(
+                    deletedProductCard
+                        .getByRole(
+                            "button",
+                            {
+                                name:
+                                    "削除",
+                                exact: true,
+                            },
+                        ),
+                ).toHaveCount(0);
+
                 await expect(
                     getProductCard(
                         page,
@@ -967,18 +1327,27 @@ test.describe.serial(
                 ).toHaveCount(0);
 
                 /**
-                 * 商品名・価格・カテゴリなどの表示情報が、
-                 * 削除後も保持されている。
+                 * 削除前の商品情報が削除後も保持されている。
                  */
-                const informationAfterDelete =
-                    await getProductCardInformation(
+                for (
+                    const information
+                    of informationBeforeDelete
+                ) {
+                    await expect(
                         deletedProductCard,
+                    ).toContainText(
+                        information,
                     );
+                }
 
-                expect(
-                    informationAfterDelete,
-                ).toBe(
-                    informationBeforeDelete,
+                /**
+                 * data-deleted属性も削除済み状態を表している。
+                 */
+                await expect(
+                    deletedProductCard,
+                ).toHaveAttribute(
+                    "data-deleted",
+                    "true",
                 );
 
                 /**
@@ -986,9 +1355,8 @@ test.describe.serial(
                  */
                 await page.reload();
 
-                await showDeletedProducts(
-                    page,
-                );
+                await selectTargetCategory(page);
+                await showDeletedProducts(page);
 
                 await expect(
                     getProductCard(
@@ -997,12 +1365,20 @@ test.describe.serial(
                     ),
                 ).toBeVisible();
 
+                await expect(
+                    getProductCard(
+                        page,
+                        targetProductName,
+                    ),
+                ).toHaveAttribute(
+                    "data-deleted",
+                    "true",
+                );
+
                 /**
                  * 通常表示へ戻すと削除した商品は表示されない。
                  */
-                await showActiveProducts(
-                    page,
-                );
+                await showActiveProducts(page);
 
                 await expect(
                     getProductCard(
@@ -1017,6 +1393,11 @@ test.describe.serial(
                         comparisonProductName,
                     ),
                 ).toBeVisible();
+
+                page.off(
+                    "request",
+                    countDeleteRequest,
+                );
             },
         );
     },
@@ -1045,22 +1426,14 @@ test.describe(
                     "/admin/product",
                 );
 
-                /**
-                 * callbackUrlが付く可能性があるため、
-                 * 正規表現でログイン画面を確認する。
-                 */
-                await expect(
-                    page,
-                ).toHaveURL(
-                    /\/admin\/login/,
-                );
+                await expect(page)
+                    .toHaveURL(
+                        /\/admin\/login/,
+                    );
 
-                /**
-                 * 商品カードと削除ボタンは表示されない。
-                 */
                 await expect(
-                    page.locator(
-                        "[data-slot='card']",
+                    page.getByTestId(
+                        "product-card",
                     ),
                 ).toHaveCount(0);
 
