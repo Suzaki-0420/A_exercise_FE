@@ -48,7 +48,7 @@ const waitForOrderResponse = (
             return (
                 url.pathname === pathname &&
                 response.request().method() ===
-                    "GET"
+                "GET"
             );
         }
     );

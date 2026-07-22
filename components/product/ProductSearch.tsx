@@ -4,6 +4,7 @@ import {
     useEffect,
     useState,
 } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -122,6 +123,10 @@ export const ProductSearch = () => {
             if (!isDeleted) {
                 return;
             }
+            toast.success(
+                "商品を削除しました。"
+            );
+
 
             /*
              * 削除成功後、
