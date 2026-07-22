@@ -39,6 +39,13 @@ export const AdminHeaderNavigation = () => {
             </Link>
 
             <Link
+                href="/admin/order/search"
+                className="hover:underline"
+            >
+                購入履歴
+            </Link>
+
+            <Link
                 href="/admin/account/register"
                 className="hover:underline"
             >

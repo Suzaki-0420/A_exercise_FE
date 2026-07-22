@@ -63,7 +63,16 @@ describe("AdminHeaderNavigation", () => {
         render(<AdminHeaderNavigation />);
 
         expect(screen.getAllByRole("link")).toHaveLength(
-            3
+            4
+        );
+        expect(
+            screen
+                .getByRole("link", {
+                    name: "購入履歴",
+                })
+                .getAttribute("href")
+        ).toBe(
+            "/admin/order/search"
         );
         expect(
             screen.getByRole("button", {

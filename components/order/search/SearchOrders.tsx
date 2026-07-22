@@ -3,12 +3,23 @@
 import { useSearchOrders } from
     "@/components/hooks/useSearchOrders";
 import Link from "next/link";
-import type { FormEvent } from "react";
+import {
+    type FormEvent,
+    useState,
+} from "react";
+
+/**
+ * 購入履歴を1ページに表示する件数
+ */
+const ORDERS_PER_PAGE = 10;
 
 /**
  * 購入履歴検索コンポーネント
  */
 export const SearchOrders = () => {
+    const [currentPage, setCurrentPage] =
+        useState(1);
+
     const {
         formData,
         orders,
@@ -31,8 +42,32 @@ export const SearchOrders = () => {
     ): Promise<void> => {
         event.preventDefault();
 
+        setCurrentPage(1);
+
         await handleSearch();
     };
+
+    /**
+     * 検索条件を初期化して1ページ目へ戻る
+     */
+    const handleReset = async (): Promise<void> => {
+        setCurrentPage(1);
+
+        await resetSearch();
+    };
+
+    const totalPages = Math.ceil(
+        orders.length / ORDERS_PER_PAGE
+    );
+
+    const firstOrderIndex =
+        (currentPage - 1) *
+        ORDERS_PER_PAGE;
+
+    const displayedOrders = orders.slice(
+        firstOrderIndex,
+        firstOrderIndex + ORDERS_PER_PAGE
+    );
 
     return (
         <main className="min-h-screen bg-white px-6 py-12">
@@ -202,7 +237,7 @@ export const SearchOrders = () => {
                         <button
                             type="button"
                             onClick={
-                                resetSearch
+                                handleReset
                             }
                             disabled={
                                 isLoading
@@ -270,7 +305,7 @@ export const SearchOrders = () => {
                                 </thead>
 
                                 <tbody>
-                                    {orders.map(
+                                    {displayedOrders.map(
                                         (order) => (
                                             <tr
                                                 key={
@@ -341,6 +376,59 @@ export const SearchOrders = () => {
                                 </tbody>
                             </table>
                         </div>
+                    )}
+
+                    {totalPages > 1 && (
+                        <nav
+                            aria-label="購入履歴のページ切り替え"
+                            className="mt-6 flex items-center justify-center gap-4"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCurrentPage(
+                                        (page) =>
+                                            Math.max(
+                                                1,
+                                                page - 1
+                                            )
+                                    );
+                                }}
+                                disabled={
+                                    currentPage === 1
+                                }
+                                className="rounded border border-green-600 px-4 py-2 font-semibold text-green-700 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
+                            >
+                                前へ
+                            </button>
+
+                            <p
+                                aria-live="polite"
+                                className="min-w-24 text-center text-sm text-gray-700"
+                            >
+                                {currentPage} / {totalPages}ページ
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCurrentPage(
+                                        (page) =>
+                                            Math.min(
+                                                totalPages,
+                                                page + 1
+                                            )
+                                    );
+                                }}
+                                disabled={
+                                    currentPage ===
+                                    totalPages
+                                }
+                                className="rounded border border-green-600 px-4 py-2 font-semibold text-green-700 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
+                            >
+                                次へ
+                            </button>
+                        </nav>
                     )}
                 </section>
             </section>
