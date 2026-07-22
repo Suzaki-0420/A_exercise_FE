@@ -126,6 +126,39 @@ const waitForInitialLoad = async (
 };
 
 /**
+ * 任意のタイミングで完了できるPromiseを生成する
+ */
+const createDeferred = <T,>() => {
+    let resolve:
+        (value: T) => void =
+        () => { };
+
+    let reject:
+        (reason?: unknown) => void =
+        () => { };
+
+    const promise =
+        new Promise<T>(
+            (
+                promiseResolve,
+                promiseReject,
+            ) => {
+                resolve =
+                    promiseResolve;
+
+                reject =
+                    promiseReject;
+            },
+        );
+
+    return {
+        promise,
+        resolve,
+        reject,
+    };
+};
+
+/**
  * 正常な入力値を設定する
  */
 const setValidFormData = (
@@ -403,6 +436,88 @@ describe(
         );
 
         it(
+            "未登録社員一覧取得完了前にアンマウントされた場合は取得結果を反映しない",
+            async () => {
+                const deferred =
+                    createDeferred<
+                        EmployeeAccount[]
+                    >();
+
+                mockGetForm
+                    .mockReturnValue(
+                        deferred.promise,
+                    );
+
+                const {
+                    unmount,
+                } = renderHook(
+                    () =>
+                        useRegisterEmployeeAccount(),
+                );
+
+                await waitFor(() => {
+                    expect(
+                        mockGetForm,
+                    ).toHaveBeenCalledTimes(1);
+                });
+
+                unmount();
+
+                await act(async () => {
+                    deferred.resolve([
+                        employeeAccount1,
+                        employeeAccount2,
+                    ]);
+
+                    await deferred.promise;
+                });
+            },
+        );
+
+        it(
+            "未登録社員一覧取得エラー発生前にアンマウントされた場合はエラーを反映しない",
+            async () => {
+                const deferred =
+                    createDeferred<
+                        EmployeeAccount[]
+                    >();
+
+                mockGetForm
+                    .mockReturnValue(
+                        deferred.promise,
+                    );
+
+                const {
+                    unmount,
+                } = renderHook(
+                    () =>
+                        useRegisterEmployeeAccount(),
+                );
+
+                await waitFor(() => {
+                    expect(
+                        mockGetForm,
+                    ).toHaveBeenCalledTimes(1);
+                });
+
+                unmount();
+
+                await act(async () => {
+                    deferred.reject(
+                        new Error(
+                            "社員一覧取得エラー",
+                        ),
+                    );
+
+                    await deferred.promise
+                        .catch(
+                            () => undefined,
+                        );
+                });
+            },
+        );
+
+        it(
             "入力値を変更するとフォームデータが更新される",
             async () => {
                 const { result } =
@@ -494,6 +609,50 @@ describe(
                     result.current
                         .selectedEmployeeName,
                 ).toBe("");
+            },
+        );
+
+        it(
+            "社員選択欄のフォーカス離脱時に社員選択を検証する",
+            async () => {
+                const {
+                    result,
+                } = renderHook(
+                    () =>
+                        useRegisterEmployeeAccount(),
+                );
+
+                await waitForInitialLoad(
+                    result,
+                );
+
+                act(() => {
+                    result.current
+                        .handleEmployeeBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .employeeUuid,
+                ).toBe(
+                    "社員名を選択してください。",
+                );
+
+                changeField(
+                    result,
+                    "employeeUuid",
+                    "employee-uuid-1",
+                );
+
+                act(() => {
+                    result.current
+                        .handleEmployeeBlur();
+                });
+
+                expect(
+                    result.current.errors
+                        .employeeUuid,
+                ).toBeUndefined();
             },
         );
 

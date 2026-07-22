@@ -97,6 +97,39 @@ const changeSearchCondition = (
 };
 
 /**
+ * 任意のタイミングで完了できるPromiseを生成する
+ */
+const createDeferred = <T,>() => {
+    let resolve:
+        (value: T) => void =
+        () => { };
+
+    let reject:
+        (reason?: unknown) => void =
+        () => { };
+
+    const promise =
+        new Promise<T>(
+            (
+                promiseResolve,
+                promiseReject,
+            ) => {
+                resolve =
+                    promiseResolve;
+
+                reject =
+                    promiseReject;
+            },
+        );
+
+    return {
+        promise,
+        resolve,
+        reject,
+    };
+};
+
+/**
  * 初期表示の購入履歴取得が終わるまで待つ
  */
 const renderSearchOrdersHook =
@@ -305,6 +338,87 @@ describe("useSearchOrders", () => {
             expect(
                 result.current.resultMessage,
             ).toBe("");
+        },
+    );
+
+    it(
+        "初期取得完了前にアンマウントされた場合は取得結果を反映しない",
+        async () => {
+            const deferred =
+                createDeferred<
+                    OrderSearchItem[]
+                >();
+
+            mockFindAll
+                .mockReturnValue(
+                    deferred.promise,
+                );
+
+            const {
+                unmount,
+            } = renderHook(
+                () =>
+                    useSearchOrders(),
+            );
+
+            await waitFor(() => {
+                expect(
+                    mockFindAll,
+                ).toHaveBeenCalledTimes(1);
+            });
+
+            unmount();
+
+            await act(async () => {
+                deferred.resolve([
+                    createOrder(),
+                ]);
+
+                await deferred.promise;
+            });
+        },
+    );
+
+    it(
+        "初期取得エラー発生前にアンマウントされた場合はエラーを反映しない",
+        async () => {
+            const deferred =
+                createDeferred<
+                    OrderSearchItem[]
+                >();
+
+            mockFindAll
+                .mockReturnValue(
+                    deferred.promise,
+                );
+
+            const {
+                unmount,
+            } = renderHook(
+                () =>
+                    useSearchOrders(),
+            );
+
+            await waitFor(() => {
+                expect(
+                    mockFindAll,
+                ).toHaveBeenCalledTimes(1);
+            });
+
+            unmount();
+
+            await act(async () => {
+                deferred.reject(
+                    new Error(
+                        "初期取得エラー",
+                    ),
+                );
+
+                await deferred.promise
+                    .catch(
+                        () => undefined,
+                    );
+            });
         },
     );
 
@@ -1042,6 +1156,110 @@ describe("useSearchOrders", () => {
             ).toBe(
                 "2件の購入履歴があります。",
             );
+        },
+    );
+
+    it(
+        "検索条件の初期化後の全件取得でErrorが発生するとsystemエラーを設定する",
+        async () => {
+            const {
+                result,
+            } =
+                await renderSearchOrdersHook();
+
+            changeSearchCondition(
+                result,
+                "orderDate",
+                "2026-07-16",
+            );
+
+            mockFindAll
+                .mockRejectedValue(
+                    new Error(
+                        "全件取得に失敗しました。",
+                    ),
+                );
+
+            await act(async () => {
+                await result.current
+                    .resetSearch();
+            });
+
+            expect(
+                result.current.formData,
+            ).toEqual({
+                orderDate: "",
+                customerAccountName: "",
+            });
+
+            expect(
+                result.current.orders,
+            ).toEqual([]);
+
+            expect(
+                result.current.errors.system,
+            ).toBe(
+                "全件取得に失敗しました。",
+            );
+
+            expect(
+                result.current.isLoading,
+            ).toBe(false);
+
+            expect(
+                result.current.resultMessage,
+            ).toBe("");
+        },
+    );
+
+    it(
+        "検索条件の初期化後の全件取得でError以外が発生すると既定メッセージを設定する",
+        async () => {
+            const {
+                result,
+            } =
+                await renderSearchOrdersHook();
+
+            changeSearchCondition(
+                result,
+                "customerAccountName",
+                "yamamoto_f",
+            );
+
+            mockFindAll
+                .mockRejectedValue(
+                    "unknown error",
+                );
+
+            await act(async () => {
+                await result.current
+                    .resetSearch();
+            });
+
+            expect(
+                result.current.formData,
+            ).toEqual({
+                orderDate: "",
+                customerAccountName: "",
+            });
+
+            expect(
+                result.current.orders,
+            ).toEqual([]);
+
+            expect(
+                result.current.errors.system,
+            ).toBe(
+                "購入履歴一覧の取得に失敗しました。",
+            );
+
+            expect(
+                result.current.isLoading,
+            ).toBe(false);
+
+            expect(
+                result.current.resultMessage,
+            ).toBe("");
         },
     );
 

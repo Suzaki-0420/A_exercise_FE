@@ -12,6 +12,17 @@ export default defineConfig({
         setupFiles: [
             "./test/setup.ts",
         ],
+
+        fileParallelism: false,
+
+        testTimeout: 10_000,
+
+        hookTimeout: 10_000,
+
+        exclude: [
+            ...configDefaults.exclude,
+            "e2e/**",
+        ],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'html'],

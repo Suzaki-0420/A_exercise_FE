@@ -451,10 +451,27 @@ describe("useUpdateProductの商品修正フロー", () => {
     it("選択画像のプレビューURLを生成し、破棄時に解放する", async () => {
         const createObjectURL = vi.fn(() => "blob:preview");
         const revokeObjectURL = vi.fn();
-        vi.stubGlobal("URL", {
-            createObjectURL,
-            revokeObjectURL,
-        });
+
+        /*
+         * URL全体を単純なオブジェクトへ置き換えると、
+         * jsdom内部で使用されるURLコンストラクタも失われる。
+         * 元のURLを継承し、Object URL用メソッドだけを追加する。
+         */
+        const NativeURL = globalThis.URL;
+
+        class MockURL extends NativeURL {
+            public static createObjectURL =
+                createObjectURL;
+
+            public static revokeObjectURL =
+                revokeObjectURL;
+        }
+
+        vi.stubGlobal(
+            "URL",
+            MockURL,
+        );
+
         const { result, unmount } =
             await renderInitializedHook();
         const imageFile = new File(["image"], "product.png", {

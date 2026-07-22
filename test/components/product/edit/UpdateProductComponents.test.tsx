@@ -297,36 +297,95 @@ describe("商品修正コンポーネント", () => {
         );
     });
 
-    it("確認内容を表示して更新・戻る・キャンセル操作をHookへ渡す", () => {
-        hookState.draft = product;
+    it(
+        "確認内容を表示して更新・戻る・キャンセル操作をHookへ渡す",
+        async () => {
+            hookState.draft = product;
 
-        render(<UpdateProductConfirm />);
+            render(<UpdateProductConfirm />);
 
-        expect(screen.getByText(product.name)).toBeTruthy();
-        expect(screen.getByText("120円")).toBeTruthy();
-        expect(screen.getByText("80個")).toBeTruthy();
-        expect(screen.getByText(category.name)).toBeTruthy();
-        expect(screen.getByText("商品画像なし")).toBeTruthy();
-        expect(
-            screen.getByText("画像は変更しません。")
-        ).toBeTruthy();
+            expect(
+                screen.getByText(product.name)
+            ).toBeTruthy();
 
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: "キャンセル",
-            })
-        );
-        fireEvent.click(
-            screen.getByRole("button", { name: "戻る" })
-        );
-        fireEvent.click(
-            screen.getByRole("button", { name: "完了" })
-        );
+            expect(
+                screen.getByText("120円")
+            ).toBeTruthy();
 
-        expect(hookState.handleCancel).toHaveBeenCalled();
-        expect(hookState.handleBackToInput).toHaveBeenCalled();
-        expect(hookState.handleUpdate).toHaveBeenCalled();
-    });
+            expect(
+                screen.getByText("80個")
+            ).toBeTruthy();
+
+            expect(
+                screen.getByText(category.name)
+            ).toBeTruthy();
+
+            expect(
+                screen.getByText("商品画像なし")
+            ).toBeTruthy();
+
+            expect(
+                screen.getByText(
+                    "画像は変更しません。"
+                )
+            ).toBeTruthy();
+
+            await act(async () => {
+                fireEvent.click(
+                    screen.getByRole(
+                        "button",
+                        {
+                            name:
+                                "キャンセル",
+                        }
+                    )
+                );
+
+                await Promise.resolve();
+            });
+
+            expect(
+                hookState.handleCancel
+            ).toHaveBeenCalledTimes(1);
+
+            await act(async () => {
+                fireEvent.click(
+                    screen.getByRole(
+                        "button",
+                        {
+                            name:
+                                "戻る",
+                        }
+                    )
+                );
+
+                await Promise.resolve();
+            });
+
+            expect(
+                hookState
+                    .handleBackToInput
+            ).toHaveBeenCalledTimes(1);
+
+            await act(async () => {
+                fireEvent.click(
+                    screen.getByRole(
+                        "button",
+                        {
+                            name:
+                                "完了",
+                        }
+                    )
+                );
+
+                await Promise.resolve();
+            });
+
+            expect(
+                hookState.handleUpdate
+            ).toHaveBeenCalledTimes(1);
+        }
+    );
 
     it("確認画面に送信・項目エラー、変更画像、初期値を表示する", () => {
         const imageFile = new File(["image"], "change.png", {

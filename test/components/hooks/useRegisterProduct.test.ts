@@ -159,6 +159,9 @@ const fillValidForm = async (
     },
     file = createImageFile()
 ) => {
+    /*
+     * 同期的な入力変更
+     */
     act(() => {
         result.current
             .handleChange(
@@ -188,23 +191,89 @@ const fillValidForm = async (
             .handleCategoryChange(
                 category.categoryUuid
             );
-
-        result.current
-            .handleImageChange(
-                createFileEvent(
-                    file
-                )
-            );
     });
 
+    /*
+     * handleImageChangeは非同期処理なので、
+     * 完了するまで待つ。
+     */
     await act(
         async () => {
-            await Promise.resolve();
+            await result.current
+                .handleImageChange(
+                    createFileEvent(
+                        file
+                    )
+                );
         }
     );
 
     return file;
 };
+
+/**
+ * jsdomでは画像を実際に読み込まないため、
+ * src設定時にonloadを発火させる。
+ */
+class MockImage {
+    public width = 800;
+
+    public height = 600;
+
+    public onload:
+        (() => void) | null = null;
+
+    public onerror:
+        (() => void) | null = null;
+
+    public set src(
+        _value: string
+    ) {
+        this.onload?.();
+    }
+}
+
+/**
+ * 縦横サイズ上限を超える画像
+ */
+class OversizedMockImage {
+    public width = 1001;
+
+    public height = 1000;
+
+    public onload:
+        (() => void) | null = null;
+
+    public onerror:
+        (() => void) | null = null;
+
+    public set src(
+        _value: string
+    ) {
+        this.onload?.();
+    }
+}
+
+/**
+ * 読み込みに失敗する画像
+ */
+class ErrorMockImage {
+    public width = 0;
+
+    public height = 0;
+
+    public onload:
+        (() => void) | null = null;
+
+    public onerror:
+        (() => void) | null = null;
+
+    public set src(
+        _value: string
+    ) {
+        this.onerror?.();
+    }
+}
 
 describe(
     "useRegisterProduct",
@@ -219,6 +288,22 @@ describe(
 
         beforeEach(() => {
             vi.clearAllMocks();
+
+            createObjectURLMock
+                .mockReset();
+
+            createObjectURLMock
+                .mockReturnValue(
+                    "blob:product-preview"
+                );
+
+            revokeObjectURLMock
+                .mockReset();
+
+            vi.stubGlobal(
+                "Image",
+                MockImage
+            );
 
             mockUseProductCategories
                 .mockReturnValue({
@@ -262,6 +347,7 @@ describe(
         afterEach(() => {
             cleanup();
             vi.useRealTimers();
+            vi.unstubAllGlobals();
         });
 
         describe(
@@ -912,7 +998,7 @@ describe(
                     "image/png",
                 ])(
                     "%s画像を選択できる",
-                    (
+                    async (
                         type
                     ) => {
                         const file =
@@ -927,14 +1013,16 @@ describe(
                                 useRegisterProduct()
                         );
 
-                        act(() => {
-                            result.current
-                                .handleImageChange(
-                                    createFileEvent(
-                                        file
-                                    )
-                                );
-                        });
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
 
                         act(() => {
                             result.current
@@ -968,7 +1056,7 @@ describe(
 
                 it(
                     "非対応形式はエラーになる",
-                    () => {
+                    async () => {
                         const file =
                             createImageFile(
                                 "image/gif"
@@ -981,14 +1069,98 @@ describe(
                                 useRegisterProduct()
                         );
 
-                        act(() => {
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        expect(
                             result.current
-                                .handleImageChange(
-                                    createFileEvent(
-                                        file
-                                    )
-                                );
-                        });
+                                .errors.image
+                        ).toBe(
+                            "商品画像はJPEGまたはPNG形式を選択してください。"
+                        );
+                    }
+                );
+
+                it(
+                    "5MB超の画像はエラーになる",
+                    async () => {
+                        const file =
+                            createImageFile(
+                                "image/png",
+                                5 * 1024 * 1024 + 1
+                            );
+
+                        const {
+                            result,
+                        } = renderHook(
+                            () =>
+                                useRegisterProduct()
+                        );
+
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        expect(
+                            result.current
+                                .errors.image
+                        ).toBe(
+                            "商品画像は5MB以下を選択してください。"
+                        );
+                    }
+                );
+
+                it(
+                    "選択後の画像形式が不正な場合はフォーカス離脱時にエラーになる",
+                    async () => {
+                        const file =
+                            createImageFile(
+                                "image/png"
+                            );
+
+                        const {
+                            result,
+                        } = renderHook(
+                            () =>
+                                useRegisterProduct()
+                        );
+
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        Object.defineProperty(
+                            file,
+                            "type",
+                            {
+                                configurable:
+                                    true,
+                                value:
+                                    "image/gif",
+                            }
+                        );
 
                         act(() => {
                             result.current
@@ -1005,12 +1177,11 @@ describe(
                 );
 
                 it(
-                    "5MB超の画像はエラーになる",
-                    () => {
+                    "選択後の画像サイズが5MBを超えた場合はフォーカス離脱時にエラーになる",
+                    async () => {
                         const file =
                             createImageFile(
-                                "image/png",
-                                5 * 1024 * 1024 + 1
+                                "image/png"
                             );
 
                         const {
@@ -1020,14 +1191,30 @@ describe(
                                 useRegisterProduct()
                         );
 
-                        act(() => {
-                            result.current
-                                .handleImageChange(
-                                    createFileEvent(
-                                        file
-                                    )
-                                );
-                        });
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        Object.defineProperty(
+                            file,
+                            "size",
+                            {
+                                configurable:
+                                    true,
+                                value:
+                                    5 *
+                                    1024 *
+                                    1024 +
+                                    1,
+                            }
+                        );
 
                         act(() => {
                             result.current
@@ -1044,11 +1231,125 @@ describe(
                 );
 
                 it(
+                    "縦横1000pxを超える画像は選択状態にしない",
+                    async () => {
+                        vi.stubGlobal(
+                            "Image",
+                            OversizedMockImage
+                        );
+
+                        const file =
+                            createImageFile();
+
+                        const {
+                            result,
+                        } = renderHook(
+                            () =>
+                                useRegisterProduct()
+                        );
+
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        expect(
+                            result.current
+                                .errors.image
+                        ).toBe(
+                            "商品画像は縦横1000px以下を選択してください。"
+                        );
+
+                        expect(
+                            result.current
+                                .imageFile
+                        ).toBeNull();
+
+                        expect(
+                            result.current
+                                .imagePreviewUrl
+                        ).toBeNull();
+
+                        expect(
+                            revokeObjectURLMock
+                        ).toHaveBeenCalledWith(
+                            "blob:product-preview"
+                        );
+                    }
+                );
+
+                it(
+                    "画像を読み込めない場合は選択状態にしない",
+                    async () => {
+                        vi.stubGlobal(
+                            "Image",
+                            ErrorMockImage
+                        );
+
+                        const file =
+                            createImageFile();
+
+                        const {
+                            result,
+                        } = renderHook(
+                            () =>
+                                useRegisterProduct()
+                        );
+
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            file
+                                        )
+                                    );
+                            }
+                        );
+
+                        expect(
+                            result.current
+                                .errors.image
+                        ).toBe(
+                            "商品画像を読み込めませんでした。"
+                        );
+
+                        expect(
+                            result.current
+                                .imageFile
+                        ).toBeNull();
+
+                        expect(
+                            result.current
+                                .imagePreviewUrl
+                        ).toBeNull();
+
+                        expect(
+                            revokeObjectURLMock
+                        ).toHaveBeenCalledWith(
+                            "blob:product-preview"
+                        );
+                    }
+                );
+
+                it(
                     "画像変更時とアンマウント時にURLを解放する",
-                    () => {
+                    async () => {
                         createObjectURLMock
                             .mockReturnValueOnce(
+                                "blob:dimension-first"
+                            )
+                            .mockReturnValueOnce(
                                 "blob:first"
+                            )
+                            .mockReturnValueOnce(
+                                "blob:dimension-second"
                             )
                             .mockReturnValueOnce(
                                 "blob:second"
@@ -1076,28 +1377,46 @@ describe(
                                 useRegisterProduct()
                         );
 
-                        act(() => {
-                            result.current
-                                .handleImageChange(
-                                    createFileEvent(
-                                        first
-                                    )
-                                );
-                        });
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            first
+                                        )
+                                    );
+                            }
+                        );
 
-                        act(() => {
+                        expect(
                             result.current
-                                .handleImageChange(
-                                    createFileEvent(
-                                        second
-                                    )
-                                );
-                        });
+                                .imagePreviewUrl
+                        ).toBe(
+                            "blob:first"
+                        );
+
+                        await act(
+                            async () => {
+                                await result.current
+                                    .handleImageChange(
+                                        createFileEvent(
+                                            second
+                                        )
+                                    );
+                            }
+                        );
 
                         expect(
                             revokeObjectURLMock
                         ).toHaveBeenCalledWith(
                             "blob:first"
+                        );
+
+                        expect(
+                            result.current
+                                .imagePreviewUrl
+                        ).toBe(
+                            "blob:second"
                         );
 
                         unmount();

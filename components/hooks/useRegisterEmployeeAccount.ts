@@ -49,11 +49,10 @@ const createInitialFormData =
 */
 const isSingleCharacterOnly =
     (value: string): boolean => {
-
-        if (value.length <= 1) {
-            return false;
-        }
-
+        /*
+         * 呼び出し前に文字数チェックを行っているため、
+         * ここでは文字種類数だけを判定する。
+         */
         return new Set(value).size === 1;
     };
 

@@ -145,11 +145,31 @@ const createCompleteData = (
 const waitForInitialLoad = async (
     result: HookResult,
 ): Promise<void> => {
+    /*
+     * useEffectからfindByIdが呼ばれるまで待つ。
+     */
     await waitFor(() => {
         expect(
             mockFindById,
         ).toHaveBeenCalledTimes(1);
+    });
 
+    /*
+     * Serviceモックが返したPromiseの完了と、
+     * その後のReact state更新をact内で待つ。
+     */
+    await act(async () => {
+        /*
+         * エラー系テストではfindByIdがrejectする。
+         * ここではPromiseの完了だけを待ち、
+         * 例外処理はHook側のcatchに任せる。
+         */
+        await Promise.resolve(
+            mockFindById.mock.results[0]?.value,
+        ).catch(() => undefined);
+    });
+
+    await waitFor(() => {
         expect(
             result.current.isLoading,
         ).toBe(false);
