@@ -1,87 +1,122 @@
-import { defineConfig, devices } from '@playwright/test';
+import {
+  defineConfig,
+  devices,
+} from "@playwright/test";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
+ * Playwright E2Eテスト設定
  */
 export default defineConfig({
-  testDir: './e2e',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://localhost:3000',
+  /*
+   * E2Eテストを配置するフォルダ。
+   */
+  testDir: "./e2e",
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+  /*
+   * Azure上の同じデータベースや認証環境を使用するため、
+   * テストファイル内も含めて並列実行しない。
+   */
+  fullyParallel: false,
+
+  /*
+   * ローカル・CIともに1つずつ実行する。
+   */
+  workers: 1,
+
+  /*
+   * CIにtest.onlyが残っていた場合は失敗させる。
+   */
+  forbidOnly: !!process.env.CI,
+
+  /*
+   * 一時的な通信エラーを考慮し、
+   * CIだけ2回まで再試行する。
+   */
+  retries: process.env.CI
+    ? 2
+    : 0,
+
+  /*
+   * ローカルでは実行後にレポートを開き、
+   * CIでは自動で開かない。
+   */
+  reporter: [
+    [
+      "html",
+      {
+        open:
+          process.env.CI
+            ? "never"
+            : "always",
+      },
+    ],
+  ],
+
+  use: {
+    /*
+     * page.goto("/admin")のように、
+     * パスだけでアクセスできる。
+     */
+    baseURL:
+      "http://localhost:3000",
+
+    /*
+     * ローカルでは再試行しないため、
+     * 失敗した最初の実行からトレースを残す。
+     */
+    trace:
+      "retain-on-failure",
+
+    /*
+     * 失敗時の画面を保存する。
+     */
+    screenshot:
+      "only-on-failure",
   },
 
-  /* Configure projects for major browsers */
   projects: [
+    /*
+     * 最初にログインし、
+     * CookieとlocalStorageを保存する。
+     */
     {
       name: "setup",
-      testMatch: /.*\.setup\.ts/,
+      testMatch:
+        /auth\.setup\.ts/,
     },
+
+    /*
+     * 実際のE2Eテスト。
+     *
+     * setupで保存された認証状態を
+     * 各テストの新しいBrowserContextへ読み込む。
+     */
     {
       name: "chromium",
       use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/admin.json",
+        ...devices[
+        "Desktop Chrome"
+        ],
+        storageState:
+          "e2e/.auth/admin.json",
       },
-      dependencies: ["setup"],
+      dependencies: [
+        "setup",
+      ],
     },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /*
+   * E2Eテスト実行前にNext.jsを起動する。
+   */
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    command:
+      "npm run dev",
+    url:
+      "http://localhost:3000",
+    reuseExistingServer:
+      !process.env.CI,
+    timeout:
+      120 * 1000,
   },
 });
