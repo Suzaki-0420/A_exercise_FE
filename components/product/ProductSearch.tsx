@@ -40,6 +40,17 @@ export const ProductSearch = () => {
     const router = useRouter();
 
     /**
+ * 現在のページ番号
+ */
+    const [currentPage, setCurrentPage] =
+        useState<number>(1);
+
+    /**
+     * 1ページに表示する商品数
+     */
+    const ITEMS_PER_PAGE = 10;
+
+    /**
      * 検索キーワード
      */
     const [keyword, setKeyword] =
@@ -312,6 +323,27 @@ export const ProductSearch = () => {
             : categoryProducts;
 
     /**
+ * 総ページ数
+ */
+    const totalPages = Math.ceil(
+        products.length / ITEMS_PER_PAGE
+    );
+
+    /**
+     * 現在ページの開始位置
+     */
+    const startIndex =
+        (currentPage - 1) * ITEMS_PER_PAGE;
+
+    /**
+     * 現在ページに表示する商品
+     */
+    const paginatedProducts = products.slice(
+        startIndex,
+        startIndex + ITEMS_PER_PAGE
+    );
+
+    /**
      * 現在表示中の検索処理の状態
      */
     const isLoading =
@@ -578,13 +610,101 @@ export const ProductSearch = () => {
             {/* 商品カード一覧 */}
             {!isLoading &&
                 products.length > 0 && (
-                    <ProductCardList
-                        products={products}
-                        onDelete={openDeleteModal}
-                        onUpdate={openUpdateModal}
+                    <>
+                        <ProductCardList
+                            products={paginatedProducts}
+                            onDelete={openDeleteModal}
+                            onUpdate={openUpdateModal}
+                        />
 
+                        {/* ページ切り替え */}
+                        {totalPages > 1 && (
+                            <div className="mt-8 flex items-center justify-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                        currentPage === 1
+                                    }
+                                    onClick={() => {
+                                        setCurrentPage(
+                                            (
+                                                previousPage
+                                            ) =>
+                                                previousPage - 1
+                                        );
+                                    }}
+                                >
+                                    前へ
+                                </Button>
 
-                    />
+                                {Array.from(
+                                    {
+                                        length: totalPages,
+                                    },
+                                    (_, index) =>
+                                        index + 1
+                                ).map(
+                                    (
+                                        pageNumber
+                                    ) => (
+                                        <Button
+                                            key={
+                                                pageNumber
+                                            }
+                                            type="button"
+                                            variant={
+                                                currentPage ===
+                                                    pageNumber
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            aria-current={
+                                                currentPage ===
+                                                    pageNumber
+                                                    ? "page"
+                                                    : undefined
+                                            }
+                                            onClick={() => {
+                                                setCurrentPage(
+                                                    pageNumber
+                                                );
+                                            }}
+                                            className={
+                                                currentPage ===
+                                                    pageNumber
+                                                    ? "bg-green-600 text-white hover:bg-green-700"
+                                                    : ""
+                                            }
+                                        >
+                                            {
+                                                pageNumber
+                                            }
+                                        </Button>
+                                    )
+                                )}
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                        currentPage ===
+                                        totalPages
+                                    }
+                                    onClick={() => {
+                                        setCurrentPage(
+                                            (
+                                                previousPage
+                                            ) =>
+                                                previousPage + 1
+                                        );
+                                    }}
+                                >
+                                    次へ
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 )}
 
             {updateTarget && (
