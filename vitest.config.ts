@@ -62,6 +62,8 @@ export default defineConfig({
                 'infrastructures/OrdersRepository.ts',
                 'infrastructures/ProductRepository.ts',
 
+                'di/container.ts',
+
             ],
 
             exclude: [...configDefaults.exclude, "e2e/**"],
