@@ -32,14 +32,14 @@ export const AdminHeaderNavigation = () => {
             </Link>
 
             <Link
-                href="/admin/category/add"
+                href="/admin/category/register"
                 className="hover:underline"
             >
                 商品カテゴリ登録
             </Link>
 
             <Link
-                href="/admin/account/add"
+                href="/admin/account/register"
                 className="hover:underline"
             >
                 アカウント登録
