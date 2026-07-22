@@ -19,11 +19,9 @@ const EXACT_PRODUCT_NAME =
 /*
  * 部分一致検索に使用するキーワード。
  *
- * 例：
- * 「蛍光ペン」が存在する場合は「蛍光」
  */
 const PARTIAL_KEYWORD =
-    "蛍光";
+    "キーボード";
 
 /*
  * 複数件の商品名に含まれるキーワード。
@@ -32,7 +30,7 @@ const PARTIAL_KEYWORD =
  * ボールペン、蛍光ペンなどが存在する場合は「ペン」
  */
 const MULTIPLE_MATCH_KEYWORD =
-    "ペン";
+    "付箋";
 
 /*
  * 削除されていない通常商品。
@@ -47,7 +45,7 @@ const ACTIVE_PRODUCT_NAME =
  * 商品名へ変更してください。
  */
 const DELETED_PRODUCT_NAME =
-    "テスト削除済み商品";
+    "油性ボールペン 黒";
 
 /*
  * 連続検索で使用する商品名。

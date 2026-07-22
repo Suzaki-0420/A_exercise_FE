@@ -49,6 +49,7 @@ export const KeywordSearchForm = ({
             <div className="w-80">
                 <Input
                     type="text"
+                    aria-label="商品名"
                     value={keyword}
                     onChange={(event) =>
                         onKeywordChange(
