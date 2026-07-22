@@ -317,10 +317,12 @@ describe("useUpdateProductの商品修正フロー", () => {
         mockGetCategories.mockRejectedValue(
             new Error("network error")
         );
-        saveProductForUpdate(product);
 
         const { result } = renderHook(() =>
-            useUpdateProduct(product.productUuid)
+            useUpdateProduct(
+                product.productUuid,
+                { initialProduct: product }
+            )
         );
 
         await waitFor(() => {
@@ -329,6 +331,8 @@ describe("useUpdateProductの商品修正フロー", () => {
             );
         });
         expect(result.current.isLoading).toBe(false);
+        expect(result.current.formData).toBeNull();
+        expect(result.current.categories).toEqual([]);
     });
 
     it("初期化完了前に画面を離れた場合は状態を更新しない", async () => {
@@ -659,6 +663,111 @@ describe("useUpdateProductの商品修正フロー", () => {
             "商品名を入力してください。"
         );
         expect(contextState.saveDraft).not.toHaveBeenCalled();
+    });
+
+    it("モーダルでは選択商品を初期表示して確認画面を開く", async () => {
+        const onProceedToConfirm = vi.fn();
+        const { result } = renderHook(() =>
+            useUpdateProduct(
+                product.productUuid,
+                {
+                    initialProduct: product,
+                    onProceedToConfirm,
+                }
+            )
+        );
+
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(false);
+            expect(result.current.formData).toEqual(product);
+        });
+
+        await submitForConfirmation(result);
+
+        expect(contextState.saveDraft).toHaveBeenCalledWith(
+            product,
+            null
+        );
+        expect(onProceedToConfirm).toHaveBeenCalledTimes(1);
+        expect(mockRouter.push).not.toHaveBeenCalledWith(
+            "/admin/product/edit/confirm"
+        );
+    });
+
+    it("モーダルの商品更新成功時は完了処理を呼び出す", async () => {
+        const onUpdateSuccess = vi.fn();
+        const onUpdatePendingChange = vi.fn();
+        contextState.draft = product;
+        const { result } = renderHook(() =>
+            useUpdateProduct(
+                undefined,
+                {
+                    onUpdateSuccess,
+                    onUpdatePendingChange,
+                }
+            )
+        );
+
+        await act(async () => {
+            await result.current.handleUpdate();
+        });
+
+        expect(onUpdateSuccess).toHaveBeenCalledWith(
+            updateResult
+        );
+        expect(
+            onUpdatePendingChange.mock.calls
+        ).toEqual([[true], [false]]);
+        expect(mockRouter.push).not.toHaveBeenCalledWith(
+            "/admin/product/edit/complete"
+        );
+    });
+
+    it("更新後処理の失敗を商品更新APIの失敗と区別する", async () => {
+        const onUpdateSuccess = vi
+            .fn()
+            .mockRejectedValue(new Error("refresh error"));
+        contextState.draft = product;
+        const { result } = renderHook(() =>
+            useUpdateProduct(
+                undefined,
+                { onUpdateSuccess }
+            )
+        );
+
+        await act(async () => {
+            await result.current.handleUpdate();
+        });
+
+        expect(mockUpdateProduct).toHaveBeenCalledTimes(1);
+        expect(result.current.submitError).toBe(
+            "商品情報の修正は完了しましたが、商品一覧を再取得できませんでした。商品検索画面を再読み込みしてください。"
+        );
+        expect(result.current.isLoading).toBe(false);
+    });
+
+    it("モーダルの戻る・キャンセル処理を呼び出す", () => {
+        const onBackToInput = vi.fn();
+        const onCancel = vi.fn();
+        contextState.draft = product;
+        const { result } = renderHook(() =>
+            useUpdateProduct(
+                undefined,
+                {
+                    onBackToInput,
+                    onCancel,
+                }
+            )
+        );
+
+        act(() => {
+            result.current.handleBackToInput();
+            result.current.handleCancel();
+        });
+
+        expect(onBackToInput).toHaveBeenCalledTimes(1);
+        expect(onCancel).toHaveBeenCalledTimes(1);
+        expect(mockRouter.push).not.toHaveBeenCalled();
     });
 
     it("商品更新成功時は完了結果を保存して完了画面へ進む", async () => {

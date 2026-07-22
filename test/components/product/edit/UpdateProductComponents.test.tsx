@@ -123,7 +123,8 @@ describe("商品修正コンポーネント", () => {
             "商品情報を読み込んでいます..."
         );
         expect(mockUseUpdateProduct).toHaveBeenCalledWith(
-            product.productUuid
+            product.productUuid,
+            undefined
         );
     });
 
@@ -150,6 +151,26 @@ describe("商品修正コンポーネント", () => {
             ).toBeTruthy();
         }
     );
+
+    it("モーダルの初期化エラーから閉じる操作を行える", () => {
+        hookState.submitError =
+            "商品修正画面の表示に必要な情報を取得できませんでした。";
+
+        render(
+            <UpdateProduct
+                productUuid={product.productUuid}
+                variant="modal"
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: "閉じる",
+            })
+        );
+
+        expect(hookState.handleCancel).toHaveBeenCalledTimes(1);
+    });
 
     it("入力画面の全項目を表示して操作をHookへ渡す", () => {
         Object.assign(hookState, {

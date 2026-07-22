@@ -1,6 +1,9 @@
 "use client";
 
-import { useUpdateProduct } from "@/components/hooks/useUpdateProduct";
+import {
+    useUpdateProduct,
+    type UseUpdateProductOptions,
+} from "@/components/hooks/useUpdateProduct";
 import {
     Alert,
     AlertDescription,
@@ -23,11 +26,11 @@ const Detail = ({
     label: string;
     children: React.ReactNode;
 }) => (
-    <div className="grid gap-1 border-b py-4 sm:grid-cols-[10rem_1fr] sm:gap-4">
+    <div className="grid min-w-0 gap-1 border-b py-4 sm:grid-cols-[10rem_1fr] sm:gap-4">
         <dt className="font-medium text-gray-700">
             {label}
         </dt>
-        <dd className="min-w-0 break-words text-gray-900">
+        <dd className="min-w-0 break-words [overflow-wrap:anywhere] text-gray-900">
             {children}
         </dd>
     </div>
@@ -36,7 +39,13 @@ const Detail = ({
 /**
  * BP010 商品修正（確認）画面
  */
-export const UpdateProductConfirm = () => {
+export const UpdateProductConfirm = ({
+    variant = "page",
+    options,
+}: {
+    variant?: "page" | "modal";
+    options?: UseUpdateProductOptions;
+} = {}) => {
     const {
         draft,
         imageFile,
@@ -48,7 +57,10 @@ export const UpdateProductConfirm = () => {
         handleBackToInput,
         handleCancel,
         handleInvalidFlow,
-    } = useUpdateProduct();
+    } = useUpdateProduct(
+        undefined,
+        options
+    );
 
     useEffect(() => {
         if (!draft) {
@@ -57,6 +69,18 @@ export const UpdateProductConfirm = () => {
     }, [draft, handleInvalidFlow]);
 
     if (!draft) {
+        if (variant === "modal") {
+            return (
+                <div
+                    role="status"
+                    className="flex min-h-48 items-center justify-center gap-2 px-4 py-12 text-sm text-gray-600"
+                >
+                    <Spinner aria-hidden="true" />
+                    商品検索画面へ移動しています...
+                </div>
+            );
+        }
+
         return (
             <main className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-12">
                 <div
@@ -70,12 +94,11 @@ export const UpdateProductConfirm = () => {
         );
     }
 
-    return (
-        <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-12">
-            <section
-                aria-labelledby="update-product-confirm-title"
-                className="w-full max-w-3xl rounded-lg border bg-white p-5 shadow-sm sm:p-8"
-            >
+    const content = (
+        <section
+            aria-labelledby="update-product-confirm-title"
+            className="w-full min-w-0 max-w-3xl overflow-x-hidden rounded-lg border bg-white p-5 shadow-sm sm:p-8"
+        >
                 <div className="mb-6">
                     <h1
                         id="update-product-confirm-title"
@@ -111,7 +134,7 @@ export const UpdateProductConfirm = () => {
                     </Alert>
                 )}
 
-                <dl className="border-t">
+                <dl className="min-w-0 border-t">
                     <Detail label="商品名">
                         {draft.name}
                     </Detail>
@@ -154,7 +177,7 @@ export const UpdateProductConfirm = () => {
                                     </span>
                                 </div>
                             )}
-                            <p className="text-sm text-gray-600">
+                            <p className="break-all text-sm text-gray-600">
                                 {imageFile
                                     ? `変更後：${imageFile.name}`
                                     : "画像は変更しません。"}
@@ -163,13 +186,13 @@ export const UpdateProductConfirm = () => {
                     </Detail>
                 </dl>
 
-                <div className="mt-8 flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
+                <div className="mt-8 flex flex-col-reverse gap-3 border-t pt-6 sm:grid sm:grid-cols-3">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={handleCancel}
                         disabled={isLoading}
-                        className="sm:min-w-28"
+                        className="w-full"
                     >
                         キャンセル
                     </Button>
@@ -178,7 +201,7 @@ export const UpdateProductConfirm = () => {
                         variant="outline"
                         onClick={handleBackToInput}
                         disabled={isLoading}
-                        className="sm:min-w-28"
+                        className="w-full"
                     >
                         <ArrowLeftIcon aria-hidden="true" />
                         戻る
@@ -187,7 +210,7 @@ export const UpdateProductConfirm = () => {
                         type="button"
                         onClick={handleUpdate}
                         disabled={isLoading}
-                        className="bg-green-700 text-white hover:bg-green-800 sm:min-w-28"
+                        className="w-full bg-green-700 text-white hover:bg-green-800"
                     >
                         {isLoading ? (
                             <>
@@ -202,7 +225,16 @@ export const UpdateProductConfirm = () => {
                         )}
                     </Button>
                 </div>
-            </section>
+        </section>
+    );
+
+    if (variant === "modal") {
+        return content;
+    }
+
+    return (
+        <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-12">
+            {content}
         </main>
     );
 };

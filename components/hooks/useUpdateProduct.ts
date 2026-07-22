@@ -13,6 +13,7 @@ import type { ProductCategory } from "@/models/ProductCategory";
 import {
     ProductUpdateError,
     type ProductUpdateFieldErrors,
+    type ProductUpdateResult,
 } from "@/models/ProductUpdate";
 import {
     isProductUuid,
@@ -34,6 +35,22 @@ const PRODUCT_CONFIRM_PATH =
     "/admin/product/edit/confirm";
 const PRODUCT_COMPLETE_PATH =
     "/admin/product/edit/complete";
+
+/**
+ * 商品修正フローの完了時に行う画面固有の処理
+ */
+export type UseUpdateProductOptions = {
+    initialProduct?: Product;
+    onProceedToConfirm?: () => void;
+    onUpdateSuccess?: (
+        result: ProductUpdateResult
+    ) => void | Promise<void>;
+    onUpdatePendingChange?: (
+        isPending: boolean
+    ) => void;
+    onBackToInput?: () => void;
+    onCancel?: () => void;
+};
 
 const createImagePreviewUrl = (
     imageFile: File | null
@@ -65,8 +82,17 @@ const revokeImagePreviewUrl = (
  * 商品修正画面用カスタムフック
  */
 export const useUpdateProduct = (
-    productUuid?: string
+    productUuid?: string,
+    options: UseUpdateProductOptions = {}
 ) => {
+    const {
+        initialProduct,
+        onProceedToConfirm,
+        onUpdateSuccess,
+        onUpdatePendingChange,
+        onBackToInput,
+        onCancel,
+    } = options;
     const router = useRouter();
     const service = useMemo(
         () =>
@@ -88,7 +114,10 @@ export const useUpdateProduct = (
         useState<Product | null>(
             draft?.productUuid === productUuid
                 ? draft
-                : null
+                : initialProduct?.productUuid ===
+                    productUuid
+                    ? initialProduct ?? null
+                    : null
         );
     const [categories, setCategories] =
         useState<ProductCategory[]>([]);
@@ -162,7 +191,10 @@ export const useUpdateProduct = (
             const selectedProduct =
                 draft?.productUuid === productUuid
                     ? draft
-                    : storedProduct;
+                    : initialProduct?.productUuid ===
+                        productUuid
+                        ? initialProduct
+                        : storedProduct;
 
             if (!selectedProduct) {
                 setSubmitError(
@@ -180,7 +212,10 @@ export const useUpdateProduct = (
             }
 
             const originalProduct =
-                storedProduct ?? selectedProduct;
+                initialProduct?.productUuid ===
+                    productUuid
+                    ? initialProduct
+                    : storedProduct ?? selectedProduct;
             originalProductNameRef.current =
                 originalProduct.name.trim();
             currentProductNameRef.current =
@@ -212,6 +247,8 @@ export const useUpdateProduct = (
                     return;
                 }
 
+                setFormData(null);
+                setCategories([]);
                 setSubmitError(
                     "商品修正画面の表示に必要な情報を取得できませんでした。"
                 );
@@ -230,7 +267,13 @@ export const useUpdateProduct = (
                 window.clearTimeout(redirectTimer);
             }
         };
-    }, [draft, productUuid, router, service]);
+    }, [
+        draft,
+        initialProduct,
+        productUuid,
+        router,
+        service,
+    ]);
 
     const handleChange = useCallback(
         (
@@ -511,6 +554,12 @@ export const useUpdateProduct = (
             };
 
             saveDraft(normalizedProduct, imageFile);
+
+            if (onProceedToConfirm) {
+                onProceedToConfirm();
+                return;
+            }
+
             router.push(PRODUCT_CONFIRM_PATH);
         },
         [
@@ -519,6 +568,7 @@ export const useUpdateProduct = (
             router,
             saveDraft,
             validateName,
+            onProceedToConfirm,
         ]
     );
 
@@ -530,17 +580,18 @@ export const useUpdateProduct = (
 
         setIsLoading(true);
         setSubmitError(null);
+        onUpdatePendingChange?.(true);
 
+        let result: ProductUpdateResult;
         try {
-            const result =
-                await service.updateProduct(
-                    draft,
-                    imageFile
-                );
-            setCompletedResult(result);
-            clearProductForUpdate();
-            router.push(PRODUCT_COMPLETE_PATH);
+            result = await service.updateProduct(
+                draft,
+                imageFile
+            );
         } catch (error: unknown) {
+            setIsLoading(false);
+            onUpdatePendingChange?.(false);
+
             if (error instanceof ProductUpdateError) {
                 if (error.status === 401) {
                     router.replace("/admin/login");
@@ -555,8 +606,26 @@ export const useUpdateProduct = (
                     "商品情報の修正に失敗しました。管理者に連絡してください。"
                 );
             }
+            return;
+        }
+
+        setCompletedResult(result);
+        clearProductForUpdate();
+
+        try {
+            if (onUpdateSuccess) {
+                await onUpdateSuccess(result);
+                return;
+            }
+
+            router.push(PRODUCT_COMPLETE_PATH);
+        } catch {
+            setSubmitError(
+                "商品情報の修正は完了しましたが、商品一覧を再取得できませんでした。商品検索画面を再読み込みしてください。"
+            );
         } finally {
             setIsLoading(false);
+            onUpdatePendingChange?.(false);
         }
     }, [
         draft,
@@ -564,6 +633,8 @@ export const useUpdateProduct = (
         router,
         service,
         setCompletedResult,
+        onUpdateSuccess,
+        onUpdatePendingChange,
     ]);
 
     const handleBackToInput = useCallback(() => {
@@ -572,16 +643,27 @@ export const useUpdateProduct = (
             return;
         }
 
+        if (onBackToInput) {
+            onBackToInput();
+            return;
+        }
+
         router.push(
             `/admin/product/edit/${encodeURIComponent(draft.productUuid)}`
         );
-    }, [draft, router]);
+    }, [draft, onBackToInput, router]);
 
     const handleCancel = useCallback(() => {
         clearFlow();
         clearProductForUpdate();
+
+        if (onCancel) {
+            onCancel();
+            return;
+        }
+
         router.push(PRODUCT_SEARCH_PATH);
-    }, [clearFlow, router]);
+    }, [clearFlow, onCancel, router]);
 
     const handleInvalidFlow = useCallback(
         (destination: "/admin" | "/admin/product") => {

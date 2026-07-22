@@ -1,6 +1,9 @@
 "use client";
 
-import { useUpdateProduct } from "@/components/hooks/useUpdateProduct";
+import {
+    useUpdateProduct,
+    type UseUpdateProductOptions,
+} from "@/components/hooks/useUpdateProduct";
 import {
     Alert,
     AlertDescription,
@@ -38,8 +41,12 @@ const FieldError = ({
  */
 export const UpdateProduct = ({
     productUuid,
+    variant = "page",
+    options,
 }: {
     productUuid: string;
+    variant?: "page" | "modal";
+    options?: UseUpdateProductOptions;
 }) => {
     const {
         formData,
@@ -58,9 +65,24 @@ export const UpdateProduct = ({
         handleImageBlur,
         handleProceedToConfirm,
         handleCancel,
-    } = useUpdateProduct(productUuid);
+    } = useUpdateProduct(
+        productUuid,
+        options
+    );
 
     if (isLoading) {
+        if (variant === "modal") {
+            return (
+                <div
+                    role="status"
+                    className="flex min-h-48 items-center justify-center gap-2 px-4 py-12 text-sm text-gray-600"
+                >
+                    <Spinner aria-hidden="true" />
+                    商品情報を読み込んでいます...
+                </div>
+            );
+        }
+
         return (
             <main className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-12">
                 <div
@@ -75,20 +97,41 @@ export const UpdateProduct = ({
     }
 
     if (!formData) {
+        const errorContent = (
+            <div className="w-full max-w-2xl">
+                <Alert variant="destructive">
+                    <CircleAlertIcon />
+                    <AlertTitle>
+                        商品情報を表示できません
+                    </AlertTitle>
+                    <AlertDescription>
+                        {submitError ??
+                            "商品情報の取得に失敗しました。"}
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+
+        if (variant === "modal") {
+            return (
+                <div className="w-full min-w-0 space-y-4 overflow-x-hidden p-6">
+                    {errorContent}
+                    <div className="flex justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancel}
+                        >
+                            閉じる
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <main className="flex flex-1 justify-center bg-gray-50 px-4 py-12">
-                <div className="w-full max-w-2xl">
-                    <Alert variant="destructive">
-                        <CircleAlertIcon />
-                        <AlertTitle>
-                            商品情報を表示できません
-                        </AlertTitle>
-                        <AlertDescription>
-                            {submitError ??
-                                "商品情報の取得に失敗しました。"}
-                        </AlertDescription>
-                    </Alert>
-                </div>
+                {errorContent}
             </main>
         );
     }
@@ -96,12 +139,11 @@ export const UpdateProduct = ({
     const stockQuantity =
         formData.productStock?.quantity ?? Number.NaN;
 
-    return (
-        <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-12">
-            <section
-                aria-labelledby="update-product-title"
-                className="w-full max-w-3xl rounded-lg border bg-white p-5 shadow-sm sm:p-8"
-            >
+    const content = (
+        <section
+            aria-labelledby="update-product-title"
+            className="w-full min-w-0 max-w-3xl overflow-x-hidden rounded-lg border bg-white p-5 shadow-sm sm:p-8"
+        >
                 <div className="mb-8">
                     <h1
                         id="update-product-title"
@@ -305,7 +347,7 @@ export const UpdateProduct = ({
                             message={fieldErrors.image}
                         />
                         {imageFile && (
-                            <p className="text-sm text-gray-700">
+                            <p className="break-all text-sm text-gray-700">
                                 選択中：{imageFile.name}
                             </p>
                         )}
@@ -355,7 +397,16 @@ export const UpdateProduct = ({
                         </Button>
                     </div>
                 </form>
-            </section>
+        </section>
+    );
+
+    if (variant === "modal") {
+        return content;
+    }
+
+    return (
+        <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-12">
+            {content}
         </main>
     );
 };
