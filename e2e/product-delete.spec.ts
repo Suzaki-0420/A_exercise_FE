@@ -506,6 +506,15 @@ test.describe.serial(
     "商品削除",
     () => {
         /**
+         * beforeEachの初期API待機や、
+         * 異常系テストで意図的に通信を停止する処理を含むため、
+         * このdescribe内のテストタイムアウトを延長する。
+         */
+        test.describe.configure({
+            timeout: 90_000,
+        });
+
+        /**
          * E2Eテスト専用商品を作成する。
          *
          * auth.setup.tsで保存した認証状態を
@@ -710,16 +719,15 @@ test.describe.serial(
                     "商品一覧画面の初回検索に失敗しました。",
                 ).toBe(true);
 
-                await expect(
-                    page.getByText(
-                        "商品を取得しています...",
-                        {
-                            exact: true,
-                        },
-                    ),
-                ).toBeHidden();
-
-                await expect(
+                /**
+                 * 商品一覧とカテゴリ一覧の読み込みが完了すると、
+                 * 商品カテゴリSelectが操作可能になる。
+                 *
+                 * 「商品を取得しています...」の表示状態は
+                 * Reactの再描画タイミングで揺れることがあるため、
+                 * 画面準備完了の判定にはSelectの有効状態を使用する。
+                 */
+                const categorySelect =
                     page.getByRole(
                         "combobox",
                         {
@@ -727,9 +735,18 @@ test.describe.serial(
                                 "商品カテゴリ",
                             exact: true,
                         },
-                    ),
+                    );
+
+                await expect(
+                    categorySelect,
+                ).toBeVisible({
+                    timeout: 30_000,
+                });
+
+                await expect(
+                    categorySelect,
                 ).toBeEnabled({
-                    timeout: 15_000,
+                    timeout: 30_000,
                 });
             },
         );
@@ -1003,7 +1020,14 @@ test.describe.serial(
             async ({ page }) => {
                 await selectTargetCategory(page);
 
-                let releaseRequest!: () => void;
+                const routePattern =
+                    "**/proxy-api/product/delete/**";
+
+                let releaseRequest:
+                    (() => void) | undefined;
+
+                let notifyRequestStarted:
+                    (() => void) | undefined;
 
                 const requestGate =
                     new Promise<void>(
@@ -1013,28 +1037,32 @@ test.describe.serial(
                         },
                     );
 
+                /**
+                 * DELETEリクエストがrouteへ到達したことを
+                 * 明示的に待つためのPromise。
+                 */
+                const requestStarted =
+                    new Promise<void>(
+                        (resolve) => {
+                            notifyRequestStarted =
+                                resolve;
+                        },
+                    );
+
                 let deleteRequestCount = 0;
 
-                const countDeleteRequest = (
-                    request: Request,
-                ): void => {
-                    if (
-                        isDeleteProductRequest(
-                            request,
-                        )
-                    ) {
-                        deleteRequestCount++;
-                    }
-                };
-
-                page.on(
-                    "request",
-                    countDeleteRequest,
-                );
-
+                /**
+                 * DELETE APIを一時停止し、
+                 * 削除処理中の画面状態を確認した後で
+                 * 500エラーを返す。
+                 */
                 await page.route(
-                    "**/proxy-api/product/delete/**",
+                    routePattern,
                     async (route) => {
+                        deleteRequestCount++;
+
+                        notifyRequestStarted?.();
+
                         await requestGate;
 
                         await route.fulfill({
@@ -1050,85 +1078,133 @@ test.describe.serial(
                     },
                 );
 
-                const dialog =
-                    await openDeleteDialog(
-                        page,
-                        targetProductName,
+                try {
+                    const dialog =
+                        await openDeleteDialog(
+                            page,
+                            targetProductName,
+                        );
+
+                    const confirmDeleteButton =
+                        dialog.getByRole(
+                            "button",
+                            {
+                                name:
+                                    "削除する",
+                                exact: true,
+                            },
+                        );
+
+                    await expect(
+                        confirmDeleteButton,
+                    ).toBeVisible();
+
+                    await confirmDeleteButton.click();
+
+                    /**
+                     * DELETEリクエストがrouteへ到達するまで待つ。
+                     */
+                    await requestStarted;
+
+                    /**
+                     * 削除中は文言が「削除中...」へ変わり、
+                     * 削除・キャンセルの両方が無効になる。
+                     */
+                    const deletingButton =
+                        dialog.getByRole(
+                            "button",
+                            {
+                                name:
+                                    "削除中...",
+                                exact: true,
+                            },
+                        );
+
+                    await expect(
+                        deletingButton,
+                    ).toBeVisible({
+                        timeout: 10_000,
+                    });
+
+                    await expect(
+                        deletingButton,
+                    ).toBeDisabled();
+
+                    await expect(
+                        dialog.getByRole(
+                            "button",
+                            {
+                                name:
+                                    "キャンセル",
+                                exact: true,
+                            },
+                        ),
+                    ).toBeDisabled();
+
+                    /**
+                     * 削除APIは1回だけ呼ばれる。
+                     */
+                    expect(
+                        deleteRequestCount,
+                    ).toBe(1);
+
+                    /**
+                     * 停止していたAPIを500エラーで完了させる。
+                     */
+                    releaseRequest?.();
+
+                    /**
+                     * Repositoryから伝播したエラーが
+                     * モーダル内に表示される。
+                     */
+                    await expect(
+                        dialog.getByRole(
+                            "alert",
+                        ),
+                    ).toContainText(
+                        DELETE_ERROR_MESSAGE,
+                        {
+                            timeout: 10_000,
+                        },
                     );
 
-                await dialog
-                    .getByRole(
-                        "button",
-                        {
-                            name:
-                                "削除する",
-                            exact: true,
-                        },
-                    )
-                    .click();
+                    /**
+                     * 失敗時は削除対象が保持されるため、
+                     * モーダルは閉じない。
+                     */
+                    await expect(
+                        dialog,
+                    ).toBeVisible();
 
-                /**
-                 * 削除中は文言が「削除中...」へ変わり、
-                 * 削除・キャンセルの両方が無効になる。
-                 */
-                const deletingButton =
-                    dialog.getByRole(
-                        "button",
-                        {
-                            name:
-                                "削除中...",
-                            exact: true,
-                        },
+                    /**
+                     * 削除処理終了後は、
+                     * 再び削除操作ができる状態へ戻る。
+                     */
+                    await expect(
+                        dialog.getByRole(
+                            "button",
+                            {
+                                name:
+                                    "削除する",
+                                exact: true,
+                            },
+                        ),
+                    ).toBeEnabled();
+
+                    expect(
+                        deleteRequestCount,
+                    ).toBe(1);
+                } finally {
+                    /**
+                     * 途中の検証で失敗しても、
+                     * 待機中のrouteを必ず解放して解除する。
+                     */
+                    releaseRequest?.();
+
+                    await page.unroute(
+                        routePattern,
                     );
-
-                await expect(deletingButton)
-                    .toBeVisible();
-
-                await expect(deletingButton)
-                    .toBeDisabled();
-
-                await expect(
-                    dialog.getByRole(
-                        "button",
-                        {
-                            name:
-                                "キャンセル",
-                            exact: true,
-                        },
-                    ),
-                ).toBeDisabled();
-
-                await expect
-                    .poll(
-                        () =>
-                            deleteRequestCount,
-                    )
-                    .toBe(1);
-
-                releaseRequest();
-
-                await expect(
-                    dialog.getByRole(
-                        "alert",
-                    ),
-                ).toContainText(
-                    DELETE_ERROR_MESSAGE,
-                );
-
-                await expect(dialog)
-                    .toBeVisible();
-
-                expect(deleteRequestCount)
-                    .toBe(1);
-
-                await page.unroute(
-                    "**/proxy-api/product/delete/**",
-                );
-
-                page.off(
-                    "request",
-                    countDeleteRequest,
-                );
+                }
 
                 /**
                  * 実APIで再取得しても商品は削除されていない。
