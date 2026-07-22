@@ -44,7 +44,7 @@ export const CategorySearchForm = ({
                     }
                     disabled={isLoading}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="商品カテゴリ">
                         <SelectValue placeholder="カテゴリを選択してください" />
                     </SelectTrigger>
 

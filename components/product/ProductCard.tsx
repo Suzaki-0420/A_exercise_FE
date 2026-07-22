@@ -27,7 +27,13 @@ export const ProductCard = ({
     onDelete,
 }: ProductCardProps) => {
     return (
-        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+        <div data-testid="product-card"
+            data-deleted={
+                product.deleteFlg === 1
+                    ? "true"
+                    : "false"
+            }
+            className="overflow-hidden rounded-lg border bg-white shadow-sm">
             <div className="relative aspect-square w-full bg-muted">
                 {product.imageUrl ? (
                     <Image

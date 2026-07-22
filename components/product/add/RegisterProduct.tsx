@@ -323,8 +323,7 @@ export const RegisterProduct = () => {
                                 type="submit"
                                 disabled={
                                     isLoading ||
-                                    isCategoriesLoading ||
-                                    hasValidationErrors
+                                    isCategoriesLoading
                                 }
                                 className="rounded bg-green-600 px-5 py-2 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >

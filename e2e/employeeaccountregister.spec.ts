@@ -29,6 +29,32 @@ const openAccountRegisterPage = async (
             exact: true,
         })
     ).toBeVisible();
+
+    /*
+     * 社員情報の読み込みが終了し、
+     * フォームが描画されるまで待つ
+     */
+    await expect(
+        page.getByText(
+            "社員情報を読み込んでいます。",
+            {
+                exact: true,
+            }
+        )
+    ).toHaveCount(0, {
+        timeout: 15_000,
+    });
+
+    await expect(
+        page.getByLabel(
+            "社員名",
+            {
+                exact: true,
+            }
+        )
+    ).toBeVisible({
+        timeout: 15_000,
+    });
 };
 
 /**
@@ -721,6 +747,123 @@ test.describe(
 
                 /*
                  * 確認モーダルが表示されていないことを確認する
+                 */
+                await expect(
+                    page.getByRole("dialog")
+                ).toHaveCount(0);
+            }
+        );
+
+        test(
+            "確認モーダルで戻るを押すと入力値を保持したまま入力画面へ戻る",
+            async ({ page }) => {
+                const {
+                    employeeSelect,
+                    accountNameInput,
+                    passwordInput,
+                    confirmButton,
+                } = getFormElements(page);
+
+                /*
+                 * 正常な値を入力する
+                 */
+                await employeeSelect.selectOption({
+                    index: 1,
+                });
+
+                await accountNameInput.fill(
+                    "Suzuki01"
+                );
+                await accountNameInput.blur();
+
+                await passwordInput.fill(
+                    "passSuzuki01"
+                );
+                await passwordInput.blur();
+
+                /*
+                 * 確認モーダルを開く
+                 */
+                await confirmButton.click();
+
+                const dialog =
+                    page.getByRole("dialog");
+
+                await expect(
+                    dialog
+                ).toBeVisible();
+
+                /*
+                 * 「戻る」を押す
+                 */
+                await dialog
+                    .getByRole("button", {
+                        name: "戻る",
+                        exact: true,
+                    })
+                    .click();
+
+                /*
+                 * 確認モーダルが閉じる
+                 */
+                await expect(
+                    page.getByRole("dialog")
+                ).toHaveCount(0);
+
+                /*
+                 * 入力値が保持されている
+                 */
+                await expect(
+                    employeeSelect
+                ).not.toHaveValue("");
+
+                await expect(
+                    accountNameInput
+                ).toHaveValue(
+                    "Suzuki01"
+                );
+
+                await expect(
+                    passwordInput
+                ).toHaveValue(
+                    "passSuzuki01"
+                );
+            }
+        );
+
+        test(
+            "既に使用されているアカウント名を入力すると重複エラーが表示される",
+            async ({ page }) => {
+                const {
+                    accountNameInput,
+                } = getFormElements(page);
+
+                /*
+                 * 既に登録済みのアカウント名を入力する
+                 */
+                await accountNameInput.fill(
+                    "Yamada"
+                );
+
+                /*
+                 * blurで重複チェックを実行
+                 */
+                await accountNameInput.blur();
+
+                /*
+                 * 重複エラーが表示される
+                 */
+                await expect(
+                    page.getByText(
+                        "このアカウント名は既に使用されています。",
+                        {
+                            exact: true,
+                        }
+                    )
+                ).toBeVisible();
+
+                /*
+                 * 確認モーダルは表示されない
                  */
                 await expect(
                     page.getByRole("dialog")
