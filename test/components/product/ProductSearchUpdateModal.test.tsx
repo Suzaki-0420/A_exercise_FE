@@ -210,6 +210,21 @@ describe("ProductSearchの商品更新モーダル", () => {
         cleanup();
     });
 
+    it("検索結果の内容にかかわらず商品検索領域を最大幅で表示する", () => {
+        render(<ProductSearch />);
+
+        const searchContainer = screen
+            .getByRole("heading", {
+                name: "商品検索",
+                exact: true,
+            })
+            .parentElement?.parentElement;
+
+        expect(
+            searchContainer?.classList.contains("w-full")
+        ).toBe(true);
+    });
+
     it("更新ボタンでモーダルを開きキャンセルで閉じる", () => {
         render(<ProductSearch />);
 

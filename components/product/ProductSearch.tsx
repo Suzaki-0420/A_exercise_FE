@@ -373,7 +373,7 @@ export const ProductSearch = () => {
     };
 
     return (
-        <div className="mx-auto max-w-6xl rounded-lg border border-border bg-white p-8 shadow-sm">
+        <div className="mx-auto w-full max-w-6xl rounded-lg border border-border bg-white p-8 shadow-sm">
             <div className="mb-6 flex items-center justify-center gap-4">
                 <h2 className="text-2xl font-bold text-foreground">
                     商品検索
