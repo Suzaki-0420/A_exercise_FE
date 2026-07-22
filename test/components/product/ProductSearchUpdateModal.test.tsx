@@ -216,7 +216,6 @@ describe("ProductSearchの商品更新モーダル", () => {
         const searchContainer = screen
             .getByRole("heading", {
                 name: "商品検索",
-                exact: true,
             })
             .parentElement?.parentElement;
 
