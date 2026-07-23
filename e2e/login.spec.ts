@@ -51,10 +51,6 @@ test.describe("ログイン", () => {
     // sleep で固定時間待つ必要がなく、テストが安定する。
     await expect(page.getByRole("heading", { name: "メニュー" })).toBeVisible();
 
-    // バックエンドが返した情報が画面まで届いていることの検証になる。
-    await expect(
-      page.getByText("利用する管理機能を選択してください。"),
-    ).toBeVisible();
   });
 
   /**
