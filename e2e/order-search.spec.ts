@@ -21,6 +21,8 @@ const ORDER_SEARCH_PATH = "/proxy-api/order/search";
 
 const ORDER_SEARCH_RESULT_PATH = "/proxy-api/order/search/result";
 
+const ORDER_ROWS_PER_PAGE = 10;
+
 test.use({
   storageState: "e2e/.auth/admin.json",
 });
@@ -112,13 +114,15 @@ const searchOrders = async (
 };
 
 /**
- * 一覧の行数がAPIレスポンスと一致することを確認する
+ * 一覧の1ページ目にAPIレスポンスの先頭10件が表示されることを確認する
  */
 const expectResultRows = async (
   page: Page,
   orders: OrderSearchItem[],
 ): Promise<void> => {
-  await expect(page.locator("tbody tr")).toHaveCount(orders.length);
+  await expect(page.locator("tbody tr")).toHaveCount(
+    Math.min(orders.length, ORDER_ROWS_PER_PAGE),
+  );
 
   if (orders.length > 0) {
     await expect(
@@ -308,7 +312,7 @@ test.describe("UC015 購入履歴検索", () => {
 
     await openOrderSearchPage(page);
 
-    await expect(page.locator("tbody tr")).toHaveCount(10);
+    await expect(page.locator("tbody tr")).toHaveCount(ORDER_ROWS_PER_PAGE);
 
     await expect(
       page.getByRole("button", {
@@ -350,7 +354,7 @@ test.describe("UC015 購入履歴検索", () => {
 
     await previousButton.click();
 
-    await expect(page.locator("tbody tr")).toHaveCount(10);
+    await expect(page.locator("tbody tr")).toHaveCount(ORDER_ROWS_PER_PAGE);
 
     await expect(page.getByText("1 / 2ページ", { exact: true })).toBeVisible();
   });
