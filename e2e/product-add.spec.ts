@@ -228,18 +228,34 @@ test.describe("BP012 新商品登録（入力）画面", () => {
     ).toBeVisible();
 
     /*
-     * カテゴリ
-     *
-     * 初期値が空の状態でfocus・blurを発生させる。
-     */
-    await categorySelect.focus();
-    await categorySelect.blur();
+ * カテゴリは未選択のまま、
+ * 確認ボタン押下時のバリデーションを確認する。
+ */
+    await expect(categorySelect).toHaveValue("");
 
+    /*
+     * 確認ボタン自体は押下可能
+     */
+    await expect(completeButton).toBeEnabled();
+
+    /*
+     * 必須項目が未入力の状態で確認ボタンを押す
+     */
+    await completeButton.click();
+
+    /*
+     * カテゴリの必須エラーが表示される
+     */
     await expect(
       page.getByText("カテゴリを選択してください。", {
         exact: true,
       }),
     ).toBeVisible();
+
+    /*
+     * 入力エラーがあるため確認モーダルは開かない
+     */
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
 
     /*
