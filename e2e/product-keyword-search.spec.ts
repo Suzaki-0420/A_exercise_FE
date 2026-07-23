@@ -7,7 +7,7 @@ test.use({
 /*
  * 実際のDBに存在する商品名へ変更してください。
  */
-const EXACT_PRODUCT_NAME = "文鎮";
+const EXACT_PRODUCT_NAME = "蛍光マーカー 黄";
 
 /*
  * 部分一致検索に使用するキーワード。
@@ -26,7 +26,7 @@ const MULTIPLE_MATCH_KEYWORD = "付箋";
 /*
  * 削除されていない通常商品。
  */
-const ACTIVE_PRODUCT_NAME = "文鎮";
+const ACTIVE_PRODUCT_NAME = "蛍光マーカー 黄";
 
 /*
  * 削除済みの商品。
@@ -39,7 +39,7 @@ const DELETED_PRODUCT_NAME = "油性ボールペン 黒";
 /*
  * 連続検索で使用する商品名。
  */
-const FIRST_SEARCH_PRODUCT_NAME = "文鎮";
+const FIRST_SEARCH_PRODUCT_NAME = "蛍光マーカー 黄";
 
 const SECOND_SEARCH_PRODUCT_NAME = "筆ペン";
 
