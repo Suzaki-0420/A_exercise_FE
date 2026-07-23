@@ -39,27 +39,19 @@ const ORDER_STATUS = {
  * 注文情報に合わせてください。
  */
 const TARGET_ORDER = {
-  orderUuid: "50000000-0000-0000-0000-000000000002",
+  orderUuid: "4ab66594-8bce-4cd6-9aae-f566505ed6c7",
 
-  orderDate: "2026/7/14 13:20:00",
+  orderDate: "2026/7/22 6:06:24",
 
-  customerAccountName: "sato_kenta",
+  customerAccountName: "yamamoto_f",
 
-  currentStatus: ORDER_STATUS.paymentWaiting,
+  currentStatus: ORDER_STATUS.reception,
 
   newStatus: ORDER_STATUS.shipped,
 
   orderDetails: [
     {
-      productName: "クリアファイル",
-      quantity: 2,
-    },
-    {
-      productName: "無線キーボード",
-      quantity: 1,
-    },
-    {
-      productName: "事務用はさみ",
+      productName: "A4ノート 40枚",
       quantity: 1,
     },
   ],
@@ -72,9 +64,9 @@ const TARGET_ORDER = {
  * 確認するために使用します。
  */
 const OTHER_ORDER = {
-  orderUuid: "50000000-0000-0000-0000-000000000001",
+  orderUuid: "0bc27033-abbc-413d-a975-a0d368674329",
 
-  currentStatus: ORDER_STATUS.reception,
+  currentStatus: ORDER_STATUS.paymentWaiting,
 };
 
 /**
