@@ -539,31 +539,56 @@ const showDeletedProducts = async (page: Page): Promise<void> => {
 
 /**
  * 選択中のカテゴリについて、
- * 削除されていない商品を表示する。
+ * 削除されていない商品を表示し、
+ * APIから取得した通常商品一覧を返す。
  */
-const showActiveProducts = async (page: Page): Promise<void> => {
-  const deletedCheckbox = page.getByRole("checkbox", {
-    name: "削除済み",
-    exact: true,
-  });
+const showActiveProducts = async (
+  page: Page,
+): Promise<ProductResponse[]> => {
+  const deletedCheckbox =
+    page.getByRole("checkbox", {
+      name: "削除済み",
+      exact: true,
+    });
 
-  await expect(deletedCheckbox).toBeVisible();
+  await expect(
+    deletedCheckbox,
+  ).toBeVisible();
 
-  await expect(deletedCheckbox).toBeEnabled();
+  await expect(
+    deletedCheckbox,
+  ).toBeEnabled();
 
-  if (!(await deletedCheckbox.isChecked())) {
-    return;
+  if (
+    !(await deletedCheckbox.isChecked())
+  ) {
+    throw new Error(
+      "削除済み一覧が表示されていないため、通常商品一覧へ切り替えられません。",
+    );
   }
 
-  const responsePromise = waitForCategorySearchResponse(page, false);
+  const responsePromise =
+    waitForCategorySearchResponse(
+      page,
+      false,
+    );
 
   await deletedCheckbox.uncheck();
 
-  const response = await responsePromise;
+  const response =
+    await responsePromise;
 
   expect(response.ok()).toBe(true);
 
-  await expect(deletedCheckbox).not.toBeChecked();
+  const activeProducts:
+    ProductResponse[] =
+    await response.json();
+
+  await expect(
+    deletedCheckbox,
+  ).not.toBeChecked();
+
+  return activeProducts;
 };
 
 /**
@@ -1238,20 +1263,44 @@ test.describe.serial("商品削除", () => {
     /**
      * 通常表示へ戻すと削除した商品は表示されない。
      */
-    await showActiveProducts(page);
-
-    /*
-     * 比較商品がどのページにあるか分からないため、
-     * 1ページ目から順番に探す。
-     */
-    const comparisonProductCard =
-      await findProductCardAcrossPages(
+    const activeProducts =
+      await showActiveProducts(
         page,
-        comparisonProductName,
       );
 
+    /*
+     * 削除対象商品は通常商品APIに含まれない。
+     */
+    expect(
+      activeProducts.some(
+        (product) =>
+          product.name ===
+          targetProductName,
+      ),
+      `通常商品APIに削除した商品「${targetProductName}」が残っています。`,
+    ).toBe(false);
+
+    /*
+     * 削除対象外の比較商品は通常商品APIに残っている。
+     */
+    expect(
+      activeProducts.some(
+        (product) =>
+          product.name ===
+          comparisonProductName,
+      ),
+      `通常商品APIに比較商品「${comparisonProductName}」が含まれていません。`,
+    ).toBe(true);
+
+    /*
+     * 通常商品一覧が画面に描画されている。
+     */
     await expect(
-      comparisonProductCard,
+      page
+        .getByTestId(
+          "product-card",
+        )
+        .first(),
     ).toBeVisible({
       timeout: 10_000,
     });
