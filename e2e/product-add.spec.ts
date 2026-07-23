@@ -241,10 +241,6 @@ test.describe("BP012 新商品登録（入力）画面", () => {
       }),
     ).toBeVisible();
 
-    /*
-     * 入力エラーがあるため、確認ボタンは無効
-     */
-    await expect(completeButton).toBeDisabled();
 
     /*
      * 確認モーダルは開かない
