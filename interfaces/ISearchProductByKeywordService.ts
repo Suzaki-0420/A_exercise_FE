@@ -4,10 +4,10 @@ import { Product } from "@/models/Product";
  * 商品キーワード検索サービスインターフェイス
  */
 export interface ISearchProductByKeywordService {
-    /**
-     * 商品検索を実行する
-     * @param keyword 検索キーワード
-     * @returns 検索結果の商品のリスト
-     */
-    execute(keyword: string, showDeletedOnly: boolean): Promise<Product[]>;
+  /**
+   * 商品検索を実行する
+   * @param keyword 検索キーワード
+   * @returns 検索結果の商品のリスト
+   */
+  execute(keyword: string, showDeletedOnly: boolean): Promise<Product[]>;
 }

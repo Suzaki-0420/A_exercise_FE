@@ -2,795 +2,428 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OrdersRepository } from "@/infrastructures/OrdersRepository";
 import type { Orders } from "@/models/Orders";
 
-
 describe("OrdersRepository", () => {
+  let repository: OrdersRepository;
 
-    let repository: OrdersRepository;
+  const fetchMock = vi.fn();
 
-    const fetchMock = vi.fn();
+  beforeEach(() => {
+    repository = new OrdersRepository();
 
+    global.fetch = fetchMock;
 
-    beforeEach(() => {
-        repository = new OrdersRepository();
+    fetchMock.mockReset();
+  });
 
-        global.fetch = fetchMock;
+  const createResponse = (body: unknown, status = 200) =>
+    ({
+      ok: true,
+      status,
+      json: vi.fn().mockResolvedValue(body),
+    }) as unknown as Response;
 
-        fetchMock.mockReset();
+  const createErrorResponse = (body: unknown, status = 400) =>
+    ({
+      ok: false,
+      status,
+      json: vi.fn().mockResolvedValue(body),
+    }) as unknown as Response;
+
+  const createJsonErrorResponse = (status = 500) =>
+    ({
+      ok: false,
+      status,
+      json: vi.fn().mockRejectedValue(new Error()),
+    }) as unknown as Response;
+
+  const createOrder = (): Orders =>
+    ({
+      orderUuid: "test-uuid",
+      orderStatus: {
+        id: 1,
+        name: "発送済み",
+      },
+    }) as Orders;
+
+  // ============================
+  // findAll
+  // ============================
+
+  describe("findAll", () => {
+    it("購入履歴一覧を取得できる", async () => {
+      const orders = [createOrder()];
+
+      fetchMock.mockResolvedValue(
+        createResponse({
+          orderList: orders,
+        }),
+      );
+
+      await expect(repository.findAll()).resolves.toEqual(orders);
     });
 
+    it("messageエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          message: "取得失敗",
+        }),
+      );
 
-    const createResponse = (
-        body: unknown,
-        status = 200
-    ) => ({
-        ok: true,
-        status,
-        json: vi.fn()
-            .mockResolvedValue(body),
-    } as unknown as Response);
+      await expect(repository.findAll()).rejects.toThrow("取得失敗");
+    });
 
+    it("json解析失敗の場合throwする", async () => {
+      fetchMock.mockResolvedValue(createJsonErrorResponse());
 
+      await expect(repository.findAll()).rejects.toThrow(
+        "購入履歴一覧の取得に失敗しました (Status: 500)",
+      );
+    });
 
-    const createErrorResponse = (
-        body: unknown,
-        status = 400
-    ) => ({
+    it("通常エラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 500));
+
+      await expect(repository.findAll()).rejects.toThrow(
+        "購入履歴一覧の取得に失敗しました",
+      );
+    });
+  });
+
+  // ============================
+  // search
+  // ============================
+
+  describe("search", () => {
+    it("条件指定検索できる", async () => {
+      fetchMock.mockResolvedValue(
+        createResponse({
+          orderList: [],
+        }),
+      );
+
+      await expect(repository.search("2026-07-01", "田中")).resolves.toEqual(
+        [],
+      );
+    });
+
+    it("条件なしでも検索できる", async () => {
+      fetchMock.mockResolvedValue(createResponse([]));
+
+      await repository.search("", "");
+
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    it("messageエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          message: "検索失敗",
+        }),
+      );
+
+      await expect(repository.search("", "")).rejects.toThrow("検索失敗");
+    });
+
+    it("errorsエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          errors: {
+            Name: ["不正"],
+          },
+        }),
+      );
+
+      await expect(repository.search("", "")).rejects.toThrow("不正");
+    });
+
+    it("既定エラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 500));
+
+      await expect(repository.search("", "")).rejects.toThrow(
+        "購入履歴の検索に失敗しました",
+      );
+    });
+
+    it("json解析失敗の場合throwする", async () => {
+      fetchMock.mockResolvedValue(createJsonErrorResponse());
+
+      await expect(repository.search("", "")).rejects.toThrow();
+    });
+  });
+
+  // ============================
+  // findById
+  // ============================
+
+  describe("findById", () => {
+    it("注文取得成功", async () => {
+      const order = createOrder();
+
+      fetchMock.mockResolvedValue(createResponse(order));
+
+      await expect(repository.findById("uuid")).resolves.toEqual(order);
+    });
+
+    it("404ならnull", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 404));
+
+      await expect(repository.findById("uuid")).resolves.toBeNull();
+    });
+
+    it("messageエラー", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          message: "取得失敗",
+        }),
+      );
+
+      await expect(repository.findById("uuid")).rejects.toThrow("取得失敗");
+    });
+
+    it("既定エラー", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 500));
+
+      await expect(repository.findById("uuid")).rejects.toThrow(
+        "注文情報の取得に失敗しました",
+      );
+    });
+
+    it("エラーレスポンスのjson解析に失敗した場合は既定エラーをthrowする", async () => {
+      fetchMock.mockResolvedValue({
         ok: false,
-        status,
-        json: vi.fn()
-            .mockResolvedValue(body),
-    } as unknown as Response);
+        status: 500,
+        json: vi.fn().mockRejectedValue(new Error("JSON parse error")),
+      } as unknown as Response);
 
+      await expect(repository.findById("uuid")).rejects.toThrow(
+        "注文情報の取得に失敗しました (Status: 500)",
+      );
+    });
+  });
 
+  // ============================
+  // confirmStatusUpdate
+  // ============================
 
-    const createJsonErrorResponse = (
-        status = 500
-    ) => ({
-        ok: false,
-        status,
-        json: vi.fn()
-            .mockRejectedValue(
-                new Error()
-            ),
-    } as unknown as Response);
+  describe("confirmStatusUpdate", () => {
+    it("注文ステータス確認成功時は確認結果を返す", async () => {
+      const response = {
+        orderId: "order-uuid",
+        currentStatusName: "受付",
+        newStatusName: "発送済み",
+      };
 
+      fetchMock.mockResolvedValue(createResponse(response));
 
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).resolves.toEqual(response);
 
-    const createOrder = (): Orders => ({
-        orderUuid: "test-uuid",
-        orderStatus: {
-            id: 1,
-            name: "発送済み"
-        }
-    } as Orders);
-
-
-
-    // ============================
-    // findAll
-    // ============================
-
-    describe("findAll", () => {
-
-        it("購入履歴一覧を取得できる", async () => {
-
-            const orders = [
-                createOrder()
-            ];
-
-            fetchMock.mockResolvedValue(
-                createResponse({
-                    orderList: orders
-                })
-            );
-
-
-            await expect(
-                repository.findAll()
-            )
-                .resolves
-                .toEqual(orders);
-        });
-
-
-
-        it("messageエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    message: "取得失敗"
-                })
-            );
-
-
-            await expect(
-                repository.findAll()
-            )
-                .rejects
-                .toThrow("取得失敗");
-        });
-
-
-
-        it("json解析失敗の場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createJsonErrorResponse()
-            );
-
-
-            await expect(
-                repository.findAll()
-            )
-                .rejects
-                .toThrow(
-                    "購入履歴一覧の取得に失敗しました (Status: 500)"
-                );
-        });
-
-
-
-        it("通常エラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({}, 500)
-            );
-
-
-            await expect(
-                repository.findAll()
-            )
-                .rejects
-                .toThrow(
-                    "購入履歴一覧の取得に失敗しました"
-                );
-        });
-
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/proxy-api/order/status/update/confirm",
+        expect.objectContaining({
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: "order-uuid",
+            newStatusId: 2,
+          }),
+        }),
+      );
     });
 
+    it("messagesエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          messages: ["更新確認失敗"],
+        }),
+      );
 
-
-    // ============================
-    // search
-    // ============================
-
-    describe("search", () => {
-
-
-        it("条件指定検索できる", async () => {
-
-            fetchMock.mockResolvedValue(
-                createResponse({
-                    orderList: []
-                })
-            );
-
-
-            await expect(
-                repository.search(
-                    "2026-07-01",
-                    "田中"
-                )
-            )
-                .resolves
-                .toEqual([]);
-        });
-
-
-
-        it("条件なしでも検索できる", async () => {
-
-            fetchMock.mockResolvedValue(
-                createResponse([])
-            );
-
-
-            await repository.search(
-                "",
-                ""
-            );
-
-
-            expect(fetchMock)
-                .toHaveBeenCalled();
-        });
-
-
-
-        it("messageエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    message: "検索失敗"
-                })
-            );
-
-
-            await expect(
-                repository.search("", "")
-            )
-                .rejects
-                .toThrow("検索失敗");
-        });
-
-
-
-        it("errorsエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    errors: {
-                        Name: [
-                            "不正"
-                        ]
-                    }
-                })
-            );
-
-
-            await expect(
-                repository.search("", "")
-            )
-                .rejects
-                .toThrow("不正");
-        });
-
-
-
-        it("既定エラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({}, 500)
-            );
-
-
-            await expect(
-                repository.search("", "")
-            )
-                .rejects
-                .toThrow(
-                    "購入履歴の検索に失敗しました"
-                );
-        });
-
-
-
-        it("json解析失敗の場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createJsonErrorResponse()
-            );
-
-
-            await expect(
-                repository.search("", "")
-            )
-                .rejects
-                .toThrow();
-        });
-
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).rejects.toThrow("更新確認失敗");
     });
 
+    it("errorsエラーの場合validation形式でthrowする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          errors: {
+            OrderStatusId: ["ステータスが不正です"],
+          },
+        }),
+      );
 
-
-    // ============================
-    // findById
-    // ============================
-
-    describe("findById", () => {
-
-
-        it("注文取得成功", async () => {
-
-            const order = createOrder();
-
-            fetchMock.mockResolvedValue(
-                createResponse(order)
-            );
-
-
-            await expect(
-                repository.findById("uuid")
-            )
-                .resolves
-                .toEqual(order);
-        });
-
-
-
-        it("404ならnull", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({}, 404)
-            );
-
-
-            await expect(
-                repository.findById("uuid")
-            )
-                .resolves
-                .toBeNull();
-        });
-
-
-
-        it("messageエラー", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    message: "取得失敗"
-                })
-            );
-
-
-            await expect(
-                repository.findById("uuid")
-            )
-                .rejects
-                .toThrow("取得失敗");
-        });
-
-
-
-        it("既定エラー", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({}, 500)
-            );
-
-
-            await expect(
-                repository.findById("uuid")
-            )
-                .rejects
-                .toThrow(
-                    "注文情報の取得に失敗しました"
-                );
-        });
-
-        it("エラーレスポンスのjson解析に失敗した場合は既定エラーをthrowする", async () => {
-
-            fetchMock.mockResolvedValue({
-                ok: false,
-                status: 500,
-                json: vi.fn()
-                    .mockRejectedValue(
-                        new Error("JSON parse error")
-                    ),
-            } as unknown as Response);
-
-
-            await expect(
-                repository.findById("uuid")
-            )
-                .rejects
-                .toThrow(
-                    "注文情報の取得に失敗しました (Status: 500)"
-                );
-        });
-
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).rejects.toThrow("ステータスが不正です");
     });
 
-    // ============================
-    // confirmStatusUpdate
-    // ============================
+    it("messageエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          message: "更新できません",
+        }),
+      );
 
-    describe("confirmStatusUpdate", () => {
-
-
-        it("注文ステータス確認成功時は確認結果を返す", async () => {
-
-            const response = {
-                orderId: "order-uuid",
-                currentStatusName: "受付",
-                newStatusName: "発送済み",
-            };
-
-            fetchMock.mockResolvedValue(
-                createResponse(response)
-            );
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .resolves
-                .toEqual(response);
-
-            expect(fetchMock)
-                .toHaveBeenCalledWith(
-                    "/proxy-api/order/status/update/confirm",
-                    expect.objectContaining({
-                        method: "POST",
-                        credentials: "include",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            orderId: "order-uuid",
-                            newStatusId: 2,
-                        }),
-                    })
-                );
-        });
-
-
-
-        it("messagesエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    messages: [
-                        "更新確認失敗"
-                    ]
-                })
-            );
-
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "更新確認失敗"
-                );
-        });
-
-
-
-        it("errorsエラーの場合validation形式でthrowする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    errors: {
-                        OrderStatusId: [
-                            "ステータスが不正です"
-                        ]
-                    }
-                })
-            );
-
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "ステータスが不正です"
-                );
-        });
-
-
-
-        it("messageエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    message:
-                        "更新できません"
-                })
-            );
-
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "更新できません"
-                );
-        });
-
-
-
-        it("既定エラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse(
-                    {},
-                    500
-                )
-            );
-
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "注文ステータス更新内容の確認に失敗しました"
-                );
-        });
-
-
-
-        it("json解析失敗の場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createJsonErrorResponse()
-            );
-
-
-            await expect(
-                repository.confirmStatusUpdate(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow();
-        });
-
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).rejects.toThrow("更新できません");
     });
 
+    it("既定エラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 500));
 
-
-    // ============================
-    // updateStatus
-    // ============================
-
-    describe("updateStatus", () => {
-
-
-        it("注文ステータス更新成功時は更新結果を返す", async () => {
-
-            const response = {
-                message: "更新しました"
-            };
-
-            fetchMock.mockResolvedValue(
-                createResponse(response)
-            );
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .resolves
-                .toEqual(response);
-
-            expect(fetchMock)
-                .toHaveBeenCalledWith(
-                    "/proxy-api/order/status/update/complete",
-                    expect.objectContaining({
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            orderId: "order-uuid",
-                            newStatusId: 2,
-                        }),
-                    })
-                );
-        });
-
-
-
-        it("messagesエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    messages: [
-                        "更新失敗"
-                    ]
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "更新失敗"
-                );
-        });
-
-
-
-        it("errorsエラーの場合validation形式でthrowする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    errors: {
-                        OrderStatus: [
-                            "ステータスエラー"
-                        ]
-                    }
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "ステータスエラー"
-                );
-        });
-
-
-
-        it("messageエラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    message:
-                        "更新不可"
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "更新不可"
-                );
-        });
-
-        it("messagesが空配列の場合は既定エラーをthrowする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    messages: []
-                }, 500)
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "注文ステータスの更新に失敗しました (Status: 500)"
-                );
-        });
-
-        it("errorsの値が文字列の場合もvalidationエラーとして処理する", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    errors: {
-                        OrderStatus:
-                            "ステータスが不正です"
-                    }
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "ステータスが不正です"
-                );
-        });
-
-        it("errorsが空オブジェクトの場合validation形式でthrowする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    errors: {}
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "validation"
-                );
-        });
-
-        it("messagesが複数の場合は改行結合する", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse({
-                    messages: [
-                        "エラー1",
-                        "エラー2"
-                    ]
-                })
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "エラー1\nエラー2"
-                );
-        });
-
-
-
-        it("既定エラーの場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createErrorResponse(
-                    {},
-                    500
-                )
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow(
-                    "注文ステータスの更新に失敗しました"
-                );
-        });
-
-
-
-        it("json解析失敗の場合throwする", async () => {
-
-            fetchMock.mockResolvedValue(
-                createJsonErrorResponse()
-            );
-
-
-            await expect(
-                repository.updateStatus(
-                    "order-uuid",
-                    2
-                )
-            )
-                .rejects
-                .toThrow();
-        });
-
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).rejects.toThrow("注文ステータス更新内容の確認に失敗しました");
     });
 
+    it("json解析失敗の場合throwする", async () => {
+      fetchMock.mockResolvedValue(createJsonErrorResponse());
 
+      await expect(
+        repository.confirmStatusUpdate("order-uuid", 2),
+      ).rejects.toThrow();
+    });
+  });
+
+  // ============================
+  // updateStatus
+  // ============================
+
+  describe("updateStatus", () => {
+    it("注文ステータス更新成功時は更新結果を返す", async () => {
+      const response = {
+        message: "更新しました",
+      };
+
+      fetchMock.mockResolvedValue(createResponse(response));
+
+      await expect(repository.updateStatus("order-uuid", 2)).resolves.toEqual(
+        response,
+      );
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/proxy-api/order/status/update/complete",
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: "order-uuid",
+            newStatusId: 2,
+          }),
+        }),
+      );
+    });
+
+    it("messagesエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          messages: ["更新失敗"],
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "更新失敗",
+      );
+    });
+
+    it("errorsエラーの場合validation形式でthrowする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          errors: {
+            OrderStatus: ["ステータスエラー"],
+          },
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "ステータスエラー",
+      );
+    });
+
+    it("messageエラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          message: "更新不可",
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "更新不可",
+      );
+    });
+
+    it("messagesが空配列の場合は既定エラーをthrowする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse(
+          {
+            messages: [],
+          },
+          500,
+        ),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "注文ステータスの更新に失敗しました (Status: 500)",
+      );
+    });
+
+    it("errorsの値が文字列の場合もvalidationエラーとして処理する", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          errors: {
+            OrderStatus: "ステータスが不正です",
+          },
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "ステータスが不正です",
+      );
+    });
+
+    it("errorsが空オブジェクトの場合validation形式でthrowする", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          errors: {},
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "validation",
+      );
+    });
+
+    it("messagesが複数の場合は改行結合する", async () => {
+      fetchMock.mockResolvedValue(
+        createErrorResponse({
+          messages: ["エラー1", "エラー2"],
+        }),
+      );
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "エラー1\nエラー2",
+      );
+    });
+
+    it("既定エラーの場合throwする", async () => {
+      fetchMock.mockResolvedValue(createErrorResponse({}, 500));
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow(
+        "注文ステータスの更新に失敗しました",
+      );
+    });
+
+    it("json解析失敗の場合throwする", async () => {
+      fetchMock.mockResolvedValue(createJsonErrorResponse());
+
+      await expect(repository.updateStatus("order-uuid", 2)).rejects.toThrow();
+    });
+  });
 });

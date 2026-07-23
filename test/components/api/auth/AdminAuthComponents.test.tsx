@@ -2,190 +2,150 @@
 
 import { AdminLoginForm } from "@/components/api/auth/login/AdminLoginForm";
 import { AdminLogoutButton } from "@/components/api/auth/logout/AdminLogoutButton";
-import {
-    cleanup,
-    fireEvent,
-    render,
-    screen,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ChangeEvent, FormEvent } from "react";
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-    loginHookState,
-    logoutHookState,
-    mockUsePathname,
-} = vi.hoisted(() => ({
-    loginHookState: {
-        credentials: {
-            accountName: "",
-            password: "",
-        },
-        fieldErrors: {},
-        submitError: null as string | null,
-        isLoading: false,
-        handleChange: vi.fn<
-            (event: ChangeEvent<HTMLInputElement>) => void
-        >(),
-        handleSubmit: vi.fn<
-            (event: FormEvent<HTMLFormElement>) => void
-        >(),
+const { loginHookState, logoutHookState, mockUsePathname } = vi.hoisted(() => ({
+  loginHookState: {
+    credentials: {
+      accountName: "",
+      password: "",
     },
-    logoutHookState: {
-        isLoading: false,
-        submitError: null as string | null,
-        handleLogout: vi.fn(),
-    },
-    mockUsePathname: vi.fn(),
+    fieldErrors: {},
+    submitError: null as string | null,
+    isLoading: false,
+    handleChange: vi.fn<(event: ChangeEvent<HTMLInputElement>) => void>(),
+    handleSubmit: vi.fn<(event: FormEvent<HTMLFormElement>) => void>(),
+  },
+  logoutHookState: {
+    isLoading: false,
+    submitError: null as string | null,
+    handleLogout: vi.fn(),
+  },
+  mockUsePathname: vi.fn(),
 }));
 
 vi.mock("@/components/hooks/useAdminLogin", () => ({
-    useAdminLogin: () => loginHookState,
+  useAdminLogin: () => loginHookState,
 }));
 
 vi.mock("@/components/hooks/useAdminLogout", () => ({
-    useAdminLogout: () => logoutHookState,
+  useAdminLogout: () => logoutHookState,
 }));
 
 vi.mock("next/navigation", () => ({
-    usePathname: mockUsePathname,
+  usePathname: mockUsePathname,
 }));
 
 describe("担当者認証コンポーネント", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        Object.assign(loginHookState, {
-            credentials: {
-                accountName: "",
-                password: "",
-            },
-            fieldErrors: {},
-            submitError: null,
-            isLoading: false,
-        });
-        Object.assign(logoutHookState, {
-            isLoading: false,
-            submitError: null,
-        });
-        mockUsePathname.mockReturnValue("/admin");
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.assign(loginHookState, {
+      credentials: {
+        accountName: "",
+        password: "",
+      },
+      fieldErrors: {},
+      submitError: null,
+      isLoading: false,
+    });
+    Object.assign(logoutHookState, {
+      isLoading: false,
+      submitError: null,
+    });
+    mockUsePathname.mockReturnValue("/admin");
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("ログインフォームの入力と送信をHookへ渡す", () => {
+    render(<AdminLoginForm />);
+
+    fireEvent.change(screen.getByLabelText("アカウント名"), {
+      target: {
+        name: "accountName",
+        value: "yamada01",
+      },
+    });
+    fireEvent.submit(
+      screen
+        .getByRole("button", {
+          name: "ログイン",
+        })
+        .closest("form")!,
+    );
+
+    expect(loginHookState.handleChange).toHaveBeenCalledTimes(1);
+    expect(loginHookState.handleSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("ログイン中の表示と項目・送信エラーを表示する", () => {
+    Object.assign(loginHookState, {
+      credentials: {
+        accountName: "invalid",
+        password: "invalid",
+      },
+      fieldErrors: {
+        accountName: "アカウント名エラー",
+        password: "パスワードエラー",
+      },
+      submitError: "ログインエラー",
+      isLoading: true,
     });
 
-    afterEach(() => {
-        cleanup();
-    });
+    render(<AdminLoginForm />);
 
-    it("ログインフォームの入力と送信をHookへ渡す", () => {
-        render(<AdminLoginForm />);
+    expect(screen.getByText("ログインエラー")).toBeTruthy();
+    expect(screen.getByText("アカウント名エラー")).toBeTruthy();
+    expect(screen.getByText("パスワードエラー")).toBeTruthy();
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "ログイン中...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
 
-        fireEvent.change(
-            screen.getByLabelText("アカウント名"),
-            {
-                target: {
-                    name: "accountName",
-                    value: "yamada01",
-                },
-            }
-        );
-        fireEvent.submit(
-            screen.getByRole("button", {
-                name: "ログイン",
-            }).closest("form")!
-        );
+  it("ログアウトボタンの操作とエラーを表示する", () => {
+    logoutHookState.submitError = "ログアウトエラー";
 
-        expect(
-            loginHookState.handleChange
-        ).toHaveBeenCalledTimes(1);
-        expect(
-            loginHookState.handleSubmit
-        ).toHaveBeenCalledTimes(1);
-    });
+    render(<AdminLogoutButton />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "ログアウト",
+      }),
+    );
 
-    it("ログイン中の表示と項目・送信エラーを表示する", () => {
-        Object.assign(loginHookState, {
-            credentials: {
-                accountName: "invalid",
-                password: "invalid",
-            },
-            fieldErrors: {
-                accountName: "アカウント名エラー",
-                password: "パスワードエラー",
-            },
-            submitError: "ログインエラー",
-            isLoading: true,
-        });
+    expect(logoutHookState.handleLogout).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert").textContent).toBe("ログアウトエラー");
+  });
 
-        render(<AdminLoginForm />);
+  it("ログイン画面ではログアウトボタンを操作対象外にする", () => {
+    mockUsePathname.mockReturnValue("/admin/login");
 
-        expect(
-            screen.getByText("ログインエラー")
-        ).toBeTruthy();
-        expect(
-            screen.getByText("アカウント名エラー")
-        ).toBeTruthy();
-        expect(
-            screen.getByText("パスワードエラー")
-        ).toBeTruthy();
-        expect(
-            (
-                screen.getByRole("button", {
-                    name: "ログイン中...",
-                }) as HTMLButtonElement
-            ).disabled
-        ).toBe(true);
-    });
+    const { container } = render(<AdminLogoutButton />);
+    const button = container.querySelector("button")!;
 
-    it("ログアウトボタンの操作とエラーを表示する", () => {
-        logoutHookState.submitError =
-            "ログアウトエラー";
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute("aria-hidden")).toBe("true");
+    expect(button.tabIndex).toBe(-1);
+  });
 
-        render(<AdminLogoutButton />);
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: "ログアウト",
-            })
-        );
+  it("ログアウト中はボタンを無効化して進行状況を表示する", () => {
+    logoutHookState.isLoading = true;
 
-        expect(
-            logoutHookState.handleLogout
-        ).toHaveBeenCalledTimes(1);
-        expect(
-            screen.getByRole("alert").textContent
-        ).toBe("ログアウトエラー");
-    });
+    render(<AdminLogoutButton />);
 
-    it("ログイン画面ではログアウトボタンを操作対象外にする", () => {
-        mockUsePathname.mockReturnValue("/admin/login");
-
-        const { container } = render(
-            <AdminLogoutButton />
-        );
-        const button = container.querySelector("button")!;
-
-        expect(button.disabled).toBe(true);
-        expect(button.getAttribute("aria-hidden")).toBe(
-            "true"
-        );
-        expect(button.tabIndex).toBe(-1);
-    });
-
-    it("ログアウト中はボタンを無効化して進行状況を表示する", () => {
-        logoutHookState.isLoading = true;
-
-        render(<AdminLogoutButton />);
-
-        expect(
-            (
-                screen.getByRole("button", {
-                    name: "ログアウト中...",
-                }) as HTMLButtonElement
-            ).disabled
-        ).toBe(true);
-    });
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "ログアウト中...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
 });

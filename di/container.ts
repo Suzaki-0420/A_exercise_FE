@@ -33,7 +33,6 @@ import { DeleteProductService } from "@/services/DeleteProductService";
 import { IUpdateOrderStatusService } from "@/interfaces/IUpdateOrderStatusService";
 import { UpdateOrderStatusService } from "@/services/UpdateOrderStatusService";
 
-
 /**
  * 演習 6-2 データアクセスとサービスを実装する
  * DIコンテナの初期化と依存関係の登録
@@ -43,21 +42,51 @@ const container = new Container();
 // バインディング（登録）設定
 // ---------------------------------------------------------
 // リポジトリの登録
-container.bind<IProductRepository>(TYPES.IProductRepository).to(ProductRepository);
-container.bind<IProductCategoryRepository>(TYPES.IProductCategoryRepository).to(ProductCategoryRepository);
-container.bind<IEmployeeAccountRepository>(TYPES.IEmployeeAccountRepository).to(EmployeeAccountRepository);
-container.bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository).to(AdminAuthRepository);
+container
+  .bind<IProductRepository>(TYPES.IProductRepository)
+  .to(ProductRepository);
+container
+  .bind<IProductCategoryRepository>(TYPES.IProductCategoryRepository)
+  .to(ProductCategoryRepository);
+container
+  .bind<IEmployeeAccountRepository>(TYPES.IEmployeeAccountRepository)
+  .to(EmployeeAccountRepository);
+container
+  .bind<IAdminAuthRepository>(TYPES.IAdminAuthRepository)
+  .to(AdminAuthRepository);
 container.bind<IOrdersRepository>(TYPES.IOrdersRepository).to(OrdersRepository);
 // サービス(ユースケース)の登録
-container.bind<IRegisterProductService>(TYPES.IRegisterProductService).to(RegisterProductService);
-container.bind<ILoginAdminService>(TYPES.ILoginAdminService).to(LoginAdminService);
-container.bind<ILogoutAdminService>(TYPES.ILogoutAdminService).to(LogoutAdminService);
-container.bind<ISearchProductByKeywordService>(TYPES.ISearchProductByKeywordService).to(SearchProductByKeywordService);
-container.bind<IRegisterCategoryService>(TYPES.IRegisterCategoryService).to(RegisterCategoryService);
-container.bind<ISearchProductByCategoryService>(TYPES.ISearchProductByCategoryService).to(SearchProductByCategoryService);
-container.bind<ISearchOrdersService>(TYPES.ISearchOrdersService).to(SearchOrdersService);
-container.bind<IRegisterEmployeeAccountService>(TYPES.IRegisterEmployeeAccountService).to(RegisterEmployeeAccountService);
-container.bind<IDeleteProductService>(TYPES.IDeleteProductService).to(DeleteProductService);
-container.bind<IUpdateProductService>(TYPES.IUpdateProductService).to(UpdateProductService);
-container.bind<IUpdateOrderStatusService>(TYPES.IUpdateOrderStatusService).to(UpdateOrderStatusService);
+container
+  .bind<IRegisterProductService>(TYPES.IRegisterProductService)
+  .to(RegisterProductService);
+container
+  .bind<ILoginAdminService>(TYPES.ILoginAdminService)
+  .to(LoginAdminService);
+container
+  .bind<ILogoutAdminService>(TYPES.ILogoutAdminService)
+  .to(LogoutAdminService);
+container
+  .bind<ISearchProductByKeywordService>(TYPES.ISearchProductByKeywordService)
+  .to(SearchProductByKeywordService);
+container
+  .bind<IRegisterCategoryService>(TYPES.IRegisterCategoryService)
+  .to(RegisterCategoryService);
+container
+  .bind<ISearchProductByCategoryService>(TYPES.ISearchProductByCategoryService)
+  .to(SearchProductByCategoryService);
+container
+  .bind<ISearchOrdersService>(TYPES.ISearchOrdersService)
+  .to(SearchOrdersService);
+container
+  .bind<IRegisterEmployeeAccountService>(TYPES.IRegisterEmployeeAccountService)
+  .to(RegisterEmployeeAccountService);
+container
+  .bind<IDeleteProductService>(TYPES.IDeleteProductService)
+  .to(DeleteProductService);
+container
+  .bind<IUpdateProductService>(TYPES.IUpdateProductService)
+  .to(UpdateProductService);
+container
+  .bind<IUpdateOrderStatusService>(TYPES.IUpdateOrderStatusService)
+  .to(UpdateOrderStatusService);
 export { container };

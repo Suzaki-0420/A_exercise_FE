@@ -1,7 +1,4 @@
-import {
-  defineConfig,
-  devices,
-} from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Playwright E2Eテスト設定
@@ -32,9 +29,7 @@ export default defineConfig({
    * 一時的な通信エラーを考慮し、
    * CIだけ2回まで再試行する。
    */
-  retries: process.env.CI
-    ? 2
-    : 0,
+  retries: process.env.CI ? 2 : 0,
 
   /*
    * ローカルでは実行後にレポートを開き、
@@ -44,10 +39,7 @@ export default defineConfig({
     [
       "html",
       {
-        open:
-          process.env.CI
-            ? "never"
-            : "always",
+        open: process.env.CI ? "never" : "always",
       },
     ],
   ],
@@ -57,21 +49,18 @@ export default defineConfig({
      * page.goto("/admin")のように、
      * パスだけでアクセスできる。
      */
-    baseURL:
-      "http://localhost:3000",
+    baseURL: "http://localhost:3000",
 
     /*
      * ローカルでは再試行しないため、
      * 失敗した最初の実行からトレースを残す。
      */
-    trace:
-      "retain-on-failure",
+    trace: "retain-on-failure",
 
     /*
      * 失敗時の画面を保存する。
      */
-    screenshot:
-      "only-on-failure",
+    screenshot: "only-on-failure",
   },
 
   projects: [
@@ -81,8 +70,7 @@ export default defineConfig({
      */
     {
       name: "setup",
-      testMatch:
-        /auth\.setup\.ts/,
+      testMatch: /auth\.setup\.ts/,
     },
 
     /*
@@ -94,15 +82,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: {
-        ...devices[
-        "Desktop Chrome"
-        ],
-        storageState:
-          "e2e/.auth/admin.json",
+        ...devices["Desktop Chrome"],
+        storageState: "e2e/.auth/admin.json",
       },
-      dependencies: [
-        "setup",
-      ],
+      dependencies: ["setup"],
     },
   ],
 
@@ -110,13 +93,9 @@ export default defineConfig({
    * E2Eテスト実行前にNext.jsを起動する。
    */
   webServer: {
-    command:
-      "npm run dev",
-    url:
-      "http://localhost:3000",
-    reuseExistingServer:
-      !process.env.CI,
-    timeout:
-      120 * 1000,
+    command: "npm run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
   },
 });

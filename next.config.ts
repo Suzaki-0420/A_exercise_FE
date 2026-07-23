@@ -12,9 +12,7 @@ import type { NextConfig } from "next";
  * 未設定時:
  * ローカル開発用のURLへフォールバックする
  */
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  "http://127.0.0.1:5000";
+const apiBaseUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:5000";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -27,8 +25,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname:
-          "trainingstorage20260713.blob.core.windows.net",
+        hostname: "trainingstorage20260713.blob.core.windows.net",
         port: "",
         pathname: "/product-images/products/**",
       },
@@ -51,40 +48,35 @@ const nextConfig: NextConfig = {
          * /api/admin/auth/login
          */
         source: "/proxy-api/auth/:path*",
-        destination:
-          `${apiBaseUrl}/api/admin/auth/:path*`,
+        destination: `${apiBaseUrl}/api/admin/auth/:path*`,
       },
       {
         /**
          * 担当者アカウントAPI
          */
         source: "/proxy-api/account/:path*",
-        destination:
-          `${apiBaseUrl}/admin/account/:path*`,
+        destination: `${apiBaseUrl}/admin/account/:path*`,
       },
       {
         /**
          * 商品管理API
          */
         source: "/proxy-api/product/:path*",
-        destination:
-          `${apiBaseUrl}/admin/product/:path*`,
+        destination: `${apiBaseUrl}/admin/product/:path*`,
       },
       {
         /**
          * 商品カテゴリ管理API
          */
         source: "/proxy-api/category/:path*",
-        destination:
-          `${apiBaseUrl}/admin/category/:path*`,
+        destination: `${apiBaseUrl}/admin/category/:path*`,
       },
       {
         /**
          * 購入管理API
          */
         source: "/proxy-api/order/:path*",
-        destination:
-          `${apiBaseUrl}/admin/order/:path*`,
+        destination: `${apiBaseUrl}/admin/order/:path*`,
       },
     ];
   },

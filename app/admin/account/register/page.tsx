@@ -4,7 +4,5 @@ import { RegisterEmployeeAccount } from "@/components/account/register/RegisterE
  * 担当者アカウント登録ページ
  */
 export default function Page() {
-    return (
-        <RegisterEmployeeAccount />
-    );
+  return <RegisterEmployeeAccount />;
 }

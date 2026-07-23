@@ -2,87 +2,65 @@ import type { Product } from "@/models/Product";
 import type { ProductUpdateFieldErrors } from "@/models/ProductUpdate";
 
 const UUID_PATTERN =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
 const MAX_IMAGE_FILE_SIZE = 2 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set([
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-]);
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /**
  * 商品識別IDとして使用できるUUID形式かを判定する
  */
 export const isProductUuid = (value: string): boolean =>
-    UUID_PATTERN.test(value) && value.toLowerCase() !== EMPTY_UUID;
+  UUID_PATTERN.test(value) && value.toLowerCase() !== EMPTY_UUID;
 
 /**
  * BP009の商品修正入力値を検証する
  */
 export const validateUpdateProduct = (
-    product: Product,
-    imageFile: File | null = null
+  product: Product,
+  imageFile: File | null = null,
 ): ProductUpdateFieldErrors => {
-    const errors: ProductUpdateFieldErrors = {};
-    const name = product.name.trim();
-    const stockQuantity =
-        product.productStock?.quantity ?? Number.NaN;
+  const errors: ProductUpdateFieldErrors = {};
+  const name = product.name.trim();
+  const stockQuantity = product.productStock?.quantity ?? Number.NaN;
 
-    if (!name) {
-        errors.name = "商品名を入力してください。";
-    } else if (name.length < 2 || name.length > 20) {
-        errors.name =
-            "商品名は2～20文字で入力してください。";
-    } else if (!/^[\p{L}\p{N}ー・\s]+$/u.test(name)) {
-        errors.name =
-            "商品名は全角・半角英数字で入力してください。";
+  if (!name) {
+    errors.name = "商品名を入力してください。";
+  } else if (name.length < 2 || name.length > 20) {
+    errors.name = "商品名は2～20文字で入力してください。";
+  } else if (!/^[\p{L}\p{N}ー・\s]+$/u.test(name)) {
+    errors.name = "商品名は全角・半角英数字で入力してください。";
+  }
+
+  if (Number.isNaN(product.price)) {
+    errors.price = "価格を入力してください。";
+  } else if (!Number.isInteger(product.price) || product.price < 0) {
+    errors.price = "正しい価格形式で入力してください。";
+  } else if (product.price > 1_000_000) {
+    errors.price = "価格は100万円以下で入力してください。";
+  }
+
+  if (Number.isNaN(stockQuantity)) {
+    errors.stockQuantity = "数量を入力してください。";
+  } else if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+    errors.stockQuantity = "正しい数量形式で入力してください。";
+  } else if (stockQuantity > 1_000) {
+    errors.stockQuantity = "数量は1000個以下で入力してください。";
+  }
+
+  if (!product.productCategory?.categoryUuid) {
+    errors.categoryUuid = "カテゴリを選択してください。";
+  }
+
+  if (imageFile) {
+    if (imageFile.size <= 0) {
+      errors.image = "画像ファイルが空です。";
+    } else if (imageFile.size > MAX_IMAGE_FILE_SIZE) {
+      errors.image = "画像のファイルサイズは2MB以下にしてください。";
+    } else if (!ALLOWED_IMAGE_TYPES.has(imageFile.type)) {
+      errors.image = "jpg、jpeg、png、webp形式の画像を指定してください。";
     }
+  }
 
-    if (Number.isNaN(product.price)) {
-        errors.price = "価格を入力してください。";
-    } else if (
-        !Number.isInteger(product.price) ||
-        product.price < 0
-    ) {
-        errors.price =
-            "正しい価格形式で入力してください。";
-    } else if (product.price > 1_000_000) {
-        errors.price =
-            "価格は100万円以下で入力してください。";
-    }
-
-    if (Number.isNaN(stockQuantity)) {
-        errors.stockQuantity =
-            "数量を入力してください。";
-    } else if (
-        !Number.isInteger(stockQuantity) ||
-        stockQuantity < 0
-    ) {
-        errors.stockQuantity =
-            "正しい数量形式で入力してください。";
-    } else if (stockQuantity > 1_000) {
-        errors.stockQuantity =
-            "数量は1000個以下で入力してください。";
-    }
-
-    if (!product.productCategory?.categoryUuid) {
-        errors.categoryUuid =
-            "カテゴリを選択してください。";
-    }
-
-    if (imageFile) {
-        if (imageFile.size <= 0) {
-            errors.image =
-                "画像ファイルが空です。";
-        } else if (imageFile.size > MAX_IMAGE_FILE_SIZE) {
-            errors.image =
-                "画像のファイルサイズは2MB以下にしてください。";
-        } else if (!ALLOWED_IMAGE_TYPES.has(imageFile.type)) {
-            errors.image =
-                "jpg、jpeg、png、webp形式の画像を指定してください。";
-        }
-    }
-
-    return errors;
+  return errors;
 };

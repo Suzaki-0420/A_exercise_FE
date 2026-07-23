@@ -4,15 +4,15 @@ import { AdminHeader } from "@/components/common/AdminHeader";
  * 管理画面共通レイアウト
  */
 export default function AdminLayout({
-    children,
+  children,
 }: Readonly<{
-    children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-    return (
-        <>
-            <AdminHeader />
+  return (
+    <>
+      <AdminHeader />
 
-            {children}
-        </>
-    );
+      {children}
+    </>
+  );
 }

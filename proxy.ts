@@ -9,25 +9,21 @@ const ADMIN_AUTH_COOKIE_NAME = "FullnessAdminAuth";
  * Cookieの正当性と権限はバックエンドのAuthorizeで検証する。
  */
 export function proxy(request: NextRequest) {
-    const { pathname } = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
-    if (pathname === ADMIN_LOGIN_PATH) {
-        return NextResponse.next();
-    }
-
-    const authCookie = request.cookies.get(
-        ADMIN_AUTH_COOKIE_NAME
-    );
-
-    if (!authCookie?.value) {
-        return NextResponse.redirect(
-            new URL(ADMIN_LOGIN_PATH, request.url)
-        );
-    }
-
+  if (pathname === ADMIN_LOGIN_PATH) {
     return NextResponse.next();
+  }
+
+  const authCookie = request.cookies.get(ADMIN_AUTH_COOKIE_NAME);
+
+  if (!authCookie?.value) {
+    return NextResponse.redirect(new URL(ADMIN_LOGIN_PATH, request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-    matcher: "/admin/:path*",
+  matcher: "/admin/:path*",
 };

@@ -7,18 +7,16 @@ import { inject, injectable } from "inversify";
  * 担当者ログアウトService
  */
 @injectable()
-export class LogoutAdminService
-    implements ILogoutAdminService
-{
-    public constructor(
-        @inject(TYPES.IAdminAuthRepository)
-        private readonly adminAuthRepository: IAdminAuthRepository
-    ) {}
+export class LogoutAdminService implements ILogoutAdminService {
+  public constructor(
+    @inject(TYPES.IAdminAuthRepository)
+    private readonly adminAuthRepository: IAdminAuthRepository,
+  ) {}
 
-    /**
-     * 担当者をログアウトする
-     */
-    public async logout(): Promise<void> {
-        await this.adminAuthRepository.logout();
-    }
+  /**
+   * 担当者をログアウトする
+   */
+  public async logout(): Promise<void> {
+    await this.adminAuthRepository.logout();
+  }
 }

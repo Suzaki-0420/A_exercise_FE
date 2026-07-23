@@ -19,12 +19,12 @@ EmployeeAccountRepository
 
 ## 1. 未登録社員一覧取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/account/form`|
-|HTTPメソッド|GET|
-|Repository|EmployeeAccountRepository|
-|メソッド|`getForm()`|
+| 項目           | 内容                                |
+| -------------- | ----------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/account/form` |
+| HTTPメソッド   | GET                                 |
+| Repository     | EmployeeAccountRepository           |
+| メソッド       | `getForm()`                         |
 
 ### 概要
 
@@ -34,12 +34,12 @@ EmployeeAccountRepository
 
 ## 2. アカウント名重複確認
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/account/validate?accountName={accountName}`|
-|HTTPメソッド|GET|
-|Repository|EmployeeAccountRepository|
-|メソッド|`validateAccountName(accountName)`|
+| 項目           | 内容                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/account/validate?accountName={accountName}` |
+| HTTPメソッド   | GET                                                               |
+| Repository     | EmployeeAccountRepository                                         |
+| メソッド       | `validateAccountName(accountName)`                                |
 
 ### 概要
 
@@ -51,12 +51,12 @@ EmployeeAccountRepository
 
 ## 3. 担当者アカウント登録
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/account/register`|
-|HTTPメソッド|POST|
-|Repository|EmployeeAccountRepository|
-|メソッド|`register(request)`|
+| 項目           | 内容                                     |
+| -------------- | ---------------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/account/register` |
+| HTTPメソッド   | POST                                     |
+| Repository     | EmployeeAccountRepository                |
+| メソッド       | `register(request)`                      |
 
 ### 概要
 
@@ -85,12 +85,12 @@ ProductCategoryRepository
 
 ## 1. 商品カテゴリ一覧取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/categories`|
-|HTTPメソッド|GET|
-|Repository|ProductCategoryRepository|
-|メソッド|`findAll()`|
+| 項目           | 内容                                      |
+| -------------- | ----------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/categories` |
+| HTTPメソッド   | GET                                       |
+| Repository     | ProductCategoryRepository                 |
+| メソッド       | `findAll()`                               |
 
 ### 概要
 
@@ -100,12 +100,12 @@ ProductCategoryRepository
 
 ## 2. 商品名重複確認
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/validate?ProductName={ProductName}`|
-|HTTPメソッド|GET|
-|Repository|ProductRepository|
-|メソッド|`validateProductName(name)`|
+| 項目           | 内容                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/validate?ProductName={ProductName}` |
+| HTTPメソッド   | GET                                                               |
+| Repository     | ProductRepository                                                 |
+| メソッド       | `validateProductName(name)`                                       |
 
 ### 概要
 
@@ -117,12 +117,12 @@ ProductCategoryRepository
 
 ## 3. 新商品登録
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/product/register`|
-|HTTPメソッド|POST|
-|Repository|ProductRepository|
-|メソッド|`create(formData)`|
+| 項目           | 内容                                     |
+| -------------- | ---------------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/product/register` |
+| HTTPメソッド   | POST                                     |
+| Repository     | ProductRepository                        |
+| メソッド       | `create(formData)`                       |
 
 ### 概要
 
@@ -151,12 +151,12 @@ ProductCategoryRepository
 
 ## 1. 全商品取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/category`|
-|HTTPメソッド|GET|
-|Repository|ProductRepository|
-|メソッド|`findAll()`|
+| 項目           | 内容                                    |
+| -------------- | --------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/category` |
+| HTTPメソッド   | GET                                     |
+| Repository     | ProductRepository                       |
+| メソッド       | `findAll()`                             |
 
 ### 概要
 
@@ -168,12 +168,12 @@ ProductCategoryRepository
 
 ## 2. カテゴリ別商品検索
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/category?productCategoryId={productCategoryId}`|
-|HTTPメソッド|GET|
-|Repository|ProductRepository|
-|メソッド|`findByCategory(categoryUuid)`|
+| 項目           | 内容                                                                          |
+| -------------- | ----------------------------------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/category?productCategoryId={productCategoryId}` |
+| HTTPメソッド   | GET                                                                           |
+| Repository     | ProductRepository                                                             |
+| メソッド       | `findByCategory(categoryUuid)`                                                |
 
 ### 概要
 
@@ -185,12 +185,12 @@ ProductCategoryRepository
 
 ## 3. 商品カテゴリ一覧取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/categories`|
-|HTTPメソッド|GET|
-|Repository|ProductCategoryRepository|
-|メソッド|`findAll()`|
+| 項目           | 内容                                      |
+| -------------- | ----------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/categories` |
+| HTTPメソッド   | GET                                       |
+| Repository     | ProductCategoryRepository                 |
+| メソッド       | `findAll()`                               |
 
 ### 概要
 
@@ -210,12 +210,12 @@ ProductRepository
 
 ## 1. 商品キーワード検索
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/products/keyword?keyword={keyword}`|
-|HTTPメソッド|GET|
-|Repository|ProductRepository|
-|メソッド|`findByKeyword(keyword)`|
+| 項目           | 内容                                                |
+| -------------- | --------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/products/keyword?keyword={keyword}` |
+| HTTPメソッド   | GET                                                 |
+| Repository     | ProductRepository                                   |
+| メソッド       | `findByKeyword(keyword)`                            |
 
 ### 概要
 
@@ -238,12 +238,12 @@ ProductCategoryRepository
 
 ## 1. 修正対象商品取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/edit/{productId}`|
-|HTTPメソッド|GET|
-|Repository|ProductRepository|
-|メソッド|`findById(productUuid)`|
+| 項目           | 内容                                            |
+| -------------- | ----------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/edit/{productId}` |
+| HTTPメソッド   | GET                                             |
+| Repository     | ProductRepository                               |
+| メソッド       | `findById(productUuid)`                         |
 
 ### 概要
 
@@ -253,12 +253,12 @@ ProductCategoryRepository
 
 ## 2. 商品カテゴリ一覧取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/product/categories`|
-|HTTPメソッド|GET|
-|Repository|ProductCategoryRepository|
-|メソッド|`findAll()`|
+| 項目           | 内容                                      |
+| -------------- | ----------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/product/categories` |
+| HTTPメソッド   | GET                                       |
+| Repository     | ProductCategoryRepository                 |
+| メソッド       | `findAll()`                               |
 
 ### 概要
 
@@ -268,12 +268,12 @@ ProductCategoryRepository
 
 ## 3. 商品修正
 
-|項目|内容|
-|---|---|
-|エンドポイント|`PUT /proxy-api/admin/product/edit/{productId}`|
-|HTTPメソッド|PUT|
-|Repository|ProductRepository|
-|メソッド|`update(productUuid, formData)`|
+| 項目           | 内容                                            |
+| -------------- | ----------------------------------------------- |
+| エンドポイント | `PUT /proxy-api/admin/product/edit/{productId}` |
+| HTTPメソッド   | PUT                                             |
+| Repository     | ProductRepository                               |
+| メソッド       | `update(productUuid, formData)`                 |
 
 ### 概要
 
@@ -301,12 +301,12 @@ ProductRepository
 
 ## 1. 商品削除
 
-|項目|内容|
-|---|---|
-|エンドポイント|`DELETE /proxy-api/admin/product/delete/{productUuid}`|
-|HTTPメソッド|DELETE|
-|Repository|ProductRepository|
-|メソッド|`delete(productUuid)`|
+| 項目           | 内容                                                   |
+| -------------- | ------------------------------------------------------ |
+| エンドポイント | `DELETE /proxy-api/admin/product/delete/{productUuid}` |
+| HTTPメソッド   | DELETE                                                 |
+| Repository     | ProductRepository                                      |
+| メソッド       | `delete(productUuid)`                                  |
 
 ### 概要
 
@@ -328,12 +328,12 @@ ProductCategoryRepository
 
 ## 1. 商品カテゴリ名重複確認
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/category/validate?categoryName={categoryName}`|
-|HTTPメソッド|GET|
-|Repository|ProductCategoryRepository|
-|メソッド|`validateCategoryName(name)`|
+| 項目           | 内容                                                                 |
+| -------------- | -------------------------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/category/validate?categoryName={categoryName}` |
+| HTTPメソッド   | GET                                                                  |
+| Repository     | ProductCategoryRepository                                            |
+| メソッド       | `validateCategoryName(name)`                                         |
 
 ### 概要
 
@@ -345,12 +345,12 @@ ProductCategoryRepository
 
 ## 2. 商品カテゴリ登録
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/category/register`|
-|HTTPメソッド|POST|
-|Repository|ProductCategoryRepository|
-|メソッド|`create(request)`|
+| 項目           | 内容                                      |
+| -------------- | ----------------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/category/register` |
+| HTTPメソッド   | POST                                      |
+| Repository     | ProductCategoryRepository                 |
+| メソッド       | `create(request)`                         |
 
 ### 概要
 
@@ -372,12 +372,12 @@ OrdersRepository
 
 ## 1. 購入履歴全件取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/order/search`|
-|HTTPメソッド|GET|
-|Repository|OrdersRepository|
-|メソッド|`findAll()`|
+| 項目           | 内容                                |
+| -------------- | ----------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/order/search` |
+| HTTPメソッド   | GET                                 |
+| Repository     | OrdersRepository                    |
+| メソッド       | `findAll()`                         |
 
 ### 概要
 
@@ -387,12 +387,12 @@ OrdersRepository
 
 ## 2. 購入履歴条件検索
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/order/search/result`|
-|HTTPメソッド|GET|
-|Repository|OrdersRepository|
-|メソッド|`search(condition)`|
+| 項目           | 内容                                       |
+| -------------- | ------------------------------------------ |
+| エンドポイント | `GET /proxy-api/admin/order/search/result` |
+| HTTPメソッド   | GET                                        |
+| Repository     | OrdersRepository                           |
+| メソッド       | `search(condition)`                        |
 
 ### 概要
 
@@ -414,12 +414,12 @@ OrdersRepository
 
 ## 1. 注文・ステータス一覧取得
 
-|項目|内容|
-|---|---|
-|エンドポイント|`GET /proxy-api/admin/order/status/update/{orderId}`|
-|HTTPメソッド|GET|
-|Repository|OrdersRepository|
-|メソッド|`getUpdateForm(orderId)`|
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| エンドポイント | `GET /proxy-api/admin/order/status/update/{orderId}` |
+| HTTPメソッド   | GET                                                  |
+| Repository     | OrdersRepository                                     |
+| メソッド       | `getUpdateForm(orderId)`                             |
 
 ### 概要
 
@@ -431,12 +431,12 @@ OrdersRepository
 
 ## 2. 注文ステータス更新
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/order/status/update/complete`|
-|HTTPメソッド|POST|
-|Repository|OrdersRepository|
-|メソッド|`update(orderId, newStatusId)`|
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/order/status/update/complete` |
+| HTTPメソッド   | POST                                                 |
+| Repository     | OrdersRepository                                     |
+| メソッド       | `update(orderId, newStatusId)`                       |
 
 ### 概要
 
@@ -464,12 +464,12 @@ AdminAuthRepository
 
 ## 1. 担当者ログイン
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/auth/login`|
-|HTTPメソッド|POST|
-|Repository|AdminAuthRepository|
-|メソッド|`login(request)`|
+| 項目           | 内容                               |
+| -------------- | ---------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/auth/login` |
+| HTTPメソッド   | POST                               |
+| Repository     | AdminAuthRepository                |
+| メソッド       | `login(request)`                   |
 
 ### 概要
 
@@ -493,12 +493,12 @@ AdminAuthRepository
 
 ## 1. 担当者ログアウト
 
-|項目|内容|
-|---|---|
-|エンドポイント|`POST /proxy-api/admin/auth/logout`|
-|HTTPメソッド|POST|
-|Repository|AdminAuthRepository|
-|メソッド|`logout()`|
+| 項目           | 内容                                |
+| -------------- | ----------------------------------- |
+| エンドポイント | `POST /proxy-api/admin/auth/logout` |
+| HTTPメソッド   | POST                                |
+| Repository     | AdminAuthRepository                 |
+| メソッド       | `logout()`                          |
 
 ### 概要
 
@@ -512,13 +512,13 @@ AdminAuthRepository
 
 # Repository一覧
 
-|Repository|役割|
-|---|---|
-|EmployeeAccountRepository|担当者アカウント登録|
-|ProductRepository|商品登録・検索・修正・削除|
-|ProductCategoryRepository|商品カテゴリ取得・登録|
-|OrdersRepository|購入履歴検索・注文ステータス更新|
-|AdminAuthRepository|担当者ログイン・ログアウト|
+| Repository                | 役割                             |
+| ------------------------- | -------------------------------- |
+| EmployeeAccountRepository | 担当者アカウント登録             |
+| ProductRepository         | 商品登録・検索・修正・削除       |
+| ProductCategoryRepository | 商品カテゴリ取得・登録           |
+| OrdersRepository          | 購入履歴検索・注文ステータス更新 |
+| AdminAuthRepository       | 担当者ログイン・ログアウト       |
 
 ---
 

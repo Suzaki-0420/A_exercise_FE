@@ -9,22 +9,25 @@ import { ISearchProductByKeywordService } from "@/interfaces/ISearchProductByKey
  */
 @injectable()
 export class SearchProductByKeywordService implements ISearchProductByKeywordService {
+  /**
+   * コンストラクタ
+   * @param productRepository IProductRepositoryの実装をインジェクションする
+   */
+  constructor(
+    @inject(TYPES.IProductRepository)
+    private productRepository: IProductRepository,
+  ) {}
 
-    /**
-     * コンストラクタ
-     * @param productRepository IProductRepositoryの実装をインジェクションする
-     */
-    constructor(
-        @inject(TYPES.IProductRepository) private productRepository: IProductRepository
-    ) { }
-
-    /**
-     * 商品検索を実行する
-     * @param keyword 検索キーワード
-     * @returns 検索結果の商品のリスト
-     */
-    public async execute(keyword: string, showDeletedOnly: boolean): Promise<Product[]> {
-        // ユースケース固有のビジネスロジックをここに記述可能
-        return await this.productRepository.searchKeyword(keyword, showDeletedOnly);
-    }
+  /**
+   * 商品検索を実行する
+   * @param keyword 検索キーワード
+   * @returns 検索結果の商品のリスト
+   */
+  public async execute(
+    keyword: string,
+    showDeletedOnly: boolean,
+  ): Promise<Product[]> {
+    // ユースケース固有のビジネスロジックをここに記述可能
+    return await this.productRepository.searchKeyword(keyword, showDeletedOnly);
+  }
 }
