@@ -1,19 +1,5 @@
 import type { NextConfig } from "next";
 
-/**
- * バックエンドAPIの接続先
- *
- * ローカル開発:
- * .env.local の API_BASE_URL を使用する
- *
- * 本番ビルド:
- * GitHub Actionsで設定した API_BASE_URL を使用する
- *
- * 未設定時:
- * ローカル開発用のURLへフォールバックする
- */
-const apiBaseUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:5000";
-
 const nextConfig: NextConfig = {
   output: "standalone",
 
@@ -31,55 +17,59 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  /**
-   * フロントエンドの /proxy-api へのリクエストを
-   * バックエンドAPIへ転送する
-   */
+  /* config options here */
   async rewrites() {
     return [
       {
         /**
-         * 担当者認証API
-         *
-         * 例:
-         * /proxy-api/auth/login
-         * ↓
-         * /api/admin/auth/login
+         * 担当者認証API用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL
+         * destination: 担当者認証APIエンドポイント
          */
-        source: "/proxy-api/auth/:path*",
-        destination: `${apiBaseUrl}/api/admin/auth/:path*`,
+        source: '/proxy-api/auth/:path*',
+        destination: 'http://74.176.217.130/api/admin/auth/:path*',
       },
       {
         /**
-         * 担当者アカウントAPI
+         * 担当者アカウントAPI用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL（相対パス）
+         * destination: 実際にデータを取得しに行くバックエンドURL
+         * ※画面（/api/users/register）とのURL衝突を避けるため、
+         *   API専用の入り口として「/proxy-api/」を冠しています。
          */
-        source: "/proxy-api/account/:path*",
-        destination: `${apiBaseUrl}/admin/account/:path*`,
+        source: '/proxy-api/account/:path*',
+        destination: 'http://74.176.217.130/admin/account/:path*',
       },
       {
         /**
-         * 商品管理API
+         * 商品管理API用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL
+         * destination: 商品管理APIエンドポイント
          */
-        source: "/proxy-api/product/:path*",
-        destination: `${apiBaseUrl}/admin/product/:path*`,
+        source: '/proxy-api/product/:path*',
+        destination: 'http://74.176.217.130/admin/product/:path*',
       },
       {
         /**
-         * 商品カテゴリ管理API
+         * 商品カテゴリ管理API用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL
+         * destination: 商品管理APIエンドポイント
          */
-        source: "/proxy-api/category/:path*",
-        destination: `${apiBaseUrl}/admin/category/:path*`,
+        source: '/proxy-api/category/:path*',
+        destination: 'http://74.176.217.130/admin/category/:path*',
       },
       {
         /**
-         * 購入管理API
+         * 購入管理API用のプロキシ設定
+         * source: フロントエンド側で呼び出すURL
+         * destination: 商品管理APIエンドポイント
          */
-        source: "/proxy-api/order/:path*",
-        destination: `${apiBaseUrl}/admin/order/:path*`,
+        source: '/proxy-api/order/:path*',
+        destination: 'http://74.176.217.130/admin/order/:path*',
       },
-    ];
-  },
+    ]
+  }
+
 };
 
 export default nextConfig;
