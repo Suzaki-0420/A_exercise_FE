@@ -90,17 +90,22 @@ jobs:
             cp -a public web-publish/public
           fi
 
+      - name: 成果物を圧縮
+        run: |
+          tar \
+            -C web-publish \
+            -czf frontend-standalone.tar.gz \
+            .
+
+          test -f frontend-standalone.tar.gz
+
       - name: 成果物を保存
         uses: actions/upload-artifact@v4
         with:
          name: frontend-standalone
-         path: |
-          web-publish/
-          !web-publish/.env
-          !web-publish/.env.*
-          include-hidden-files: true
-          retention-days: 1
-           if-no-files-found: error
+         path: frontend-standalone.tar.gz
+         retention-days: 1
+         if-no-files-found: error
 
   deploy:
     name: Azure VMへデプロイ
@@ -124,7 +129,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-standalone
-          path: web-publish
+          path: artifact
+
+      - name: 成果物を展開して確認
+        run: |
+          rm -rf web-publish
+          mkdir -p web-publish
+
+          tar \
+            -xzf artifact/frontend-standalone.tar.gz \
+            -C web-publish
+
+          test -f web-publish/server.js
+          test -d web-publish/.next
+          test -f web-publish/.next/BUILD_ID
 
       - name: SSH鍵を準備
         run: |
