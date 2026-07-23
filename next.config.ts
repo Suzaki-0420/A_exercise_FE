@@ -1,5 +1,21 @@
 import type { NextConfig } from "next";
 
+/**
+ * バックエンドAPIの接続先
+ *
+ * 環境変数API_BASE_URLが設定されている場合は、その値を使用する。
+ * 未設定の場合は、Azure VMのパブリックIPを使用する。
+ *
+ * ローカル・CI:
+ *   http://74.176.217.130
+ *
+ * Azure VM本番:
+ *   http://127.0.0.1:5000
+ */
+const apiBaseUrl =
+  process.env.API_BASE_URL ??
+  "http://74.176.217.130";
+
 const nextConfig: NextConfig = {
   output: "standalone",
 
@@ -11,65 +27,62 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "trainingstorage20260713.blob.core.windows.net",
+        hostname:
+          "trainingstorage20260713.blob.core.windows.net",
         port: "",
         pathname: "/product-images/products/**",
       },
     ],
   },
-  /* config options here */
+
+  /**
+   * フロントエンドからバックエンドAPIへ
+   * リクエストを転送するための設定
+   */
   async rewrites() {
     return [
       {
         /**
-         * 担当者認証API用のプロキシ設定
-         * source: フロントエンド側で呼び出すURL
-         * destination: 担当者認証APIエンドポイント
+         * 担当者認証API
          */
-        source: '/proxy-api/auth/:path*',
-        destination: 'http://74.176.217.130/api/admin/auth/:path*',
+        source: "/proxy-api/auth/:path*",
+        destination:
+          `${apiBaseUrl}/api/admin/auth/:path*`,
       },
       {
         /**
-         * 担当者アカウントAPI用のプロキシ設定
-         * source: フロントエンド側で呼び出すURL（相対パス）
-         * destination: 実際にデータを取得しに行くバックエンドURL
-         * ※画面（/api/users/register）とのURL衝突を避けるため、
-         *   API専用の入り口として「/proxy-api/」を冠しています。
+         * 担当者アカウントAPI
          */
-        source: '/proxy-api/account/:path*',
-        destination: 'http://74.176.217.130/admin/account/:path*',
+        source: "/proxy-api/account/:path*",
+        destination:
+          `${apiBaseUrl}/admin/account/:path*`,
       },
       {
         /**
-         * 商品管理API用のプロキシ設定
-         * source: フロントエンド側で呼び出すURL
-         * destination: 商品管理APIエンドポイント
+         * 商品管理API
          */
-        source: '/proxy-api/product/:path*',
-        destination: 'http://74.176.217.130/admin/product/:path*',
+        source: "/proxy-api/product/:path*",
+        destination:
+          `${apiBaseUrl}/admin/product/:path*`,
       },
       {
         /**
-         * 商品カテゴリ管理API用のプロキシ設定
-         * source: フロントエンド側で呼び出すURL
-         * destination: 商品管理APIエンドポイント
+         * 商品カテゴリ管理API
          */
-        source: '/proxy-api/category/:path*',
-        destination: 'http://74.176.217.130/admin/category/:path*',
+        source: "/proxy-api/category/:path*",
+        destination:
+          `${apiBaseUrl}/admin/category/:path*`,
       },
       {
         /**
-         * 購入管理API用のプロキシ設定
-         * source: フロントエンド側で呼び出すURL
-         * destination: 商品管理APIエンドポイント
+         * 購入管理API
          */
-        source: '/proxy-api/order/:path*',
-        destination: 'http://74.176.217.130/admin/order/:path*',
+        source: "/proxy-api/order/:path*",
+        destination:
+          `${apiBaseUrl}/admin/order/:path*`,
       },
-    ]
-  }
-
+    ];
+  },
 };
 
 export default nextConfig;
