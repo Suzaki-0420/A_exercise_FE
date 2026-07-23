@@ -239,10 +239,18 @@ export const ProductSearch = () => {
     const products =
         displayMode === "keyword" ? keywordProducts : categoryProducts;
 
+    const sortedProducts =
+        [...products].sort(
+            (a, b) =>
+                a.productUuid.localeCompare(
+                    b.productUuid
+                )
+        );
+
     /**
      * 総ページ数
      */
-    const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
 
     /**
      * 現在ページの開始位置
@@ -252,7 +260,7 @@ export const ProductSearch = () => {
     /**
      * 現在ページに表示する商品
      */
-    const paginatedProducts = products.slice(
+    const paginatedProducts = sortedProducts.slice(
         startIndex,
         startIndex + ITEMS_PER_PAGE,
     );
@@ -310,8 +318,8 @@ export const ProductSearch = () => {
                         handleTabChange("category");
                     }}
                     className={`rounded-t-md border px-4 py-3 font-semibold transition-colors ${displayMode === "category"
-                            ? "border-green-600 bg-green-600 text-white"
-                            : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "border-green-600 bg-green-600 text-white"
+                        : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                 >
                     カテゴリ検索
@@ -325,8 +333,8 @@ export const ProductSearch = () => {
                         handleTabChange("keyword");
                     }}
                     className={`rounded-t-md border px-4 py-3 font-semibold transition-colors ${displayMode === "keyword"
-                            ? "border-green-600 bg-green-600 text-white"
-                            : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "border-green-600 bg-green-600 text-white"
+                        : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                 >
                     キーワード検索
