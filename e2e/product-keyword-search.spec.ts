@@ -41,7 +41,7 @@ const DELETED_PRODUCT_NAME = "油性ボールペン 黒";
  */
 const FIRST_SEARCH_PRODUCT_NAME = "蛍光マーカー 黄";
 
-const SECOND_SEARCH_PRODUCT_NAME = "筆ペン";
+const SECOND_SEARCH_PRODUCT_NAME = "A4ノート 40枚";
 
 /**
  * 商品検索画面を開く
