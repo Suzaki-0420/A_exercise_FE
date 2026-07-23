@@ -870,7 +870,7 @@ describe("useRegisterCategory", () => {
     );
 
     it(
-        "トーストは3秒後に自動で閉じる",
+        "トーストは10秒後に自動で閉じる",
         async () => {
             vi.useFakeTimers();
 
@@ -898,7 +898,7 @@ describe("useRegisterCategory", () => {
 
             act(() => {
                 vi.advanceTimersByTime(
-                    2999,
+                    9999,
                 );
             });
 

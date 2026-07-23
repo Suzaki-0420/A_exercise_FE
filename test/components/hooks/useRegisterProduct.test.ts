@@ -1936,7 +1936,7 @@ describe(
                 );
 
                 it(
-                    "3秒経過すると自動で閉じる",
+                    "10秒経過すると自動で閉じる",
                     async () => {
                         vi.useFakeTimers();
 
@@ -1970,7 +1970,7 @@ describe(
 
                         act(() => {
                             vi.advanceTimersByTime(
-                                2999
+                                9999
                             );
                         });
 

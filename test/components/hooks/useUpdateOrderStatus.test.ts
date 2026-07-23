@@ -2303,7 +2303,7 @@ describe(
         );
 
         it(
-            "更新成功後にトーストを表示し3秒後に閉じる",
+            "更新成功後にトーストを表示し10秒後に閉じる",
             async () => {
                 const { result } =
                     renderHook(
@@ -2336,7 +2336,7 @@ describe(
 
                 act(() => {
                     vi.advanceTimersByTime(
-                        2999,
+                        9999,
                     );
                 });
 
