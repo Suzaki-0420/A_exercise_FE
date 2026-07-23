@@ -71,246 +71,111 @@ const getProductCard = (page: Page, productName: string): Locator => {
 };
 
 /**
- * ページネーションを順番に移動し、
- * 指定した商品のカードを探す。
+ * 商品一覧で1ページに表示される商品数。
  */
-const findProductCardAcrossPages =
-  async (
-    page: Page,
-    productName: string,
-  ): Promise<Locator> => {
-    /*
-   * 現在のページが2ページ目以降でも、
-   * 必ず1ページ目から探す。
-   */
-    await goToFirstProductPage(
-      page,
-    );
+const PRODUCTS_PER_PAGE = 10;
 
-    /*
-     * 無限ループ防止のため、
-     * 最大50ページまで確認する。
-     */
-    for (
-      let pageNumber = 1;
-      pageNumber <= 50;
-      pageNumber++
-    ) {
-      const productCard =
-        getProductCard(
-          page,
-          productName,
-        );
+/**
+ * 商品一覧を指定したページへ移動する。
+ *
+ * 削除済み商品のAPIレスポンス上の位置から対象ページを計算し、
+ * 「最初」「次へ」のページネーションを使って移動する。
+ */
+const goToProductPage = async (
+  page: Page,
+  targetPageNumber: number,
+): Promise<void> => {
+  if (targetPageNumber <= 1) {
+    return;
+  }
 
-      /*
-       * 現在のページに対象商品があれば返す。
-       */
-      if (
-        await productCard
-          .isVisible()
-          .catch(() => false)
-      ) {
-        return productCard;
-      }
+  const firstPageControl = page
+    .getByRole("button", {
+      name: /最初|先頭/,
+    })
+    .or(
+      page.getByRole("link", {
+        name: /最初|先頭/,
+      }),
+    )
+    .first();
 
-      /*
-       * ページネーションがbuttonの場合と
-       * linkの場合の両方に対応する。
-       */
-      const nextPageControl =
-        page
-          .getByRole(
-            "button",
-            {
-              name:
-                /次へ|次のページ/,
-            },
-          )
-          .or(
-            page.getByRole(
-              "link",
-              {
-                name:
-                  /次へ|次のページ/,
-              },
-            ),
-          )
-          .first();
+  if ((await firstPageControl.count()) > 0) {
+    const firstPageDisabled =
+      (await firstPageControl.getAttribute("aria-disabled")) === "true" ||
+      (await firstPageControl.isDisabled().catch(() => false));
 
-      /*
-       * 次ページが存在しなければ探索終了。
-       */
-      if (
-        await nextPageControl.count() === 0
-      ) {
-        break;
-      }
+    if (!firstPageDisabled) {
+      const firstCardBefore = await page
+        .getByTestId("product-card")
+        .first()
+        .innerText()
+        .catch(() => "");
 
-      const ariaDisabled =
-        await nextPageControl
-          .getAttribute(
-            "aria-disabled",
-          );
+      await firstPageControl.click();
 
-      const isDisabled =
-        await nextPageControl
-          .isDisabled()
-          .catch(() => false);
-
-      /*
-       * 最終ページなら探索終了。
-       */
-      if (
-        ariaDisabled === "true" ||
-        isDisabled
-      ) {
-        break;
-      }
-
-      /*
-       * ページ変更を確認するため、
-       * 現在の先頭商品の表示内容を保持する。
-       */
-      const firstCardBefore =
-        await page
-          .getByTestId(
-            "product-card",
-          )
-          .first()
-          .innerText()
-          .catch(() => "");
-
-      await nextPageControl.click();
-
-      /*
-       * クライアント側ページングでは
-       * API通信が発生しないことがあるため、
-       * 先頭の商品が変わるまで待つ。
-       */
       await expect
         .poll(
-          async () => {
-            const firstCardAfter =
-              await page
-                .getByTestId(
-                  "product-card",
-                )
-                .first()
-                .innerText()
-                .catch(
-                  () => "",
-                );
-
-            return (
-              firstCardAfter !==
-              firstCardBefore
-            );
-          },
+          async () =>
+            await page
+              .getByTestId("product-card")
+              .first()
+              .innerText()
+              .catch(() => ""),
           {
             timeout: 10_000,
           },
         )
-        .toBe(true);
+        .not.toBe(firstCardBefore);
     }
-
-    throw new Error(
-      `ページネーションを最後まで確認しましたが、商品「${productName}」が見つかりませんでした。`,
-    );
-  };
-
-/**
-* 商品一覧を1ページ目へ戻す。
-*/
-const goToFirstProductPage = async (
-  page: Page,
-): Promise<void> => {
-  const firstPageControl =
-    page
-      .getByRole(
-        "button",
-        {
-          name: "最初",
-          exact: true,
-        },
-      )
-      .or(
-        page.getByRole(
-          "link",
-          {
-            name: "最初",
-            exact: true,
-          },
-        ),
-      )
-      .first();
-
-  /*
-   * 1ページしかない場合は、
-   * ページネーション自体が表示されない可能性がある。
-   */
-  if (
-    await firstPageControl.count() === 0
-  ) {
-    return;
   }
 
-  const ariaDisabled =
-    await firstPageControl
-      .getAttribute(
-        "aria-disabled",
-      );
+  const nextPageControl = page
+    .getByRole("button", {
+      name: /次へ|次のページ/,
+    })
+    .or(
+      page.getByRole("link", {
+        name: /次へ|次のページ/,
+      }),
+    )
+    .first();
 
-  const isDisabled =
-    await firstPageControl
-      .isDisabled()
-      .catch(() => false);
+  for (let currentPage = 1; currentPage < targetPageNumber; currentPage++) {
+    await expect(nextPageControl).toBeVisible({
+      timeout: 10_000,
+    });
 
-  /*
-   * すでに1ページ目なら操作しない。
-   */
-  if (
-    ariaDisabled === "true" ||
-    isDisabled
-  ) {
-    return;
-  }
+    const ariaDisabled = await nextPageControl.getAttribute("aria-disabled");
+    const isDisabled = await nextPageControl.isDisabled().catch(() => false);
 
-  const firstCardBefore =
-    await page
-      .getByTestId(
-        "product-card",
-      )
+    expect(
+      ariaDisabled === "true" || isDisabled,
+      `${targetPageNumber}ページ目へ移動する前に次ページ操作が無効になりました。`,
+    ).toBe(false);
+
+    const firstCardBefore = await page
+      .getByTestId("product-card")
       .first()
       .innerText()
       .catch(() => "");
 
-  await firstPageControl.click();
+    await nextPageControl.click();
 
-  /*
-   * ページの表示内容が変わるまで待つ。
-   */
-  await expect
-    .poll(
-      async () => {
-        const firstCardAfter =
+    await expect
+      .poll(
+        async () =>
           await page
-            .getByTestId(
-              "product-card",
-            )
+            .getByTestId("product-card")
             .first()
             .innerText()
-            .catch(() => "");
-
-        return (
-          firstCardAfter !==
-          firstCardBefore
-        );
-      },
-      {
-        timeout: 10_000,
-      },
-    )
-    .toBe(true);
+            .catch(() => ""),
+        {
+          timeout: 10_000,
+        },
+      )
+      .not.toBe(firstCardBefore);
+  }
 };
 
 /**
@@ -510,20 +375,24 @@ const selectTargetCategory = async (page: Page): Promise<void> => {
 
 /**
  * 選択中のカテゴリについて、
- * 削除済み商品のみを表示する。
+ * 削除済み商品のみを表示し、
+ * APIから取得した削除済み商品一覧を返す。
  */
-const showDeletedProducts = async (page: Page): Promise<void> => {
+const showDeletedProducts = async (
+  page: Page,
+): Promise<ProductResponse[]> => {
   const deletedCheckbox = page.getByRole("checkbox", {
     name: "削除済み",
     exact: true,
   });
 
   await expect(deletedCheckbox).toBeVisible();
-
   await expect(deletedCheckbox).toBeEnabled();
 
   if (await deletedCheckbox.isChecked()) {
-    return;
+    throw new Error(
+      "削除済み一覧がすでに表示されているため、検索レスポンスを取得できません。",
+    );
   }
 
   const responsePromise = waitForCategorySearchResponse(page, true);
@@ -534,7 +403,17 @@ const showDeletedProducts = async (page: Page): Promise<void> => {
 
   expect(response.ok()).toBe(true);
 
+  const deletedProducts: ProductResponse[] = await response.json();
+
   await expect(deletedCheckbox).toBeChecked();
+
+  if (deletedProducts.length > 0) {
+    await expect(page.getByTestId("product-card").first()).toBeVisible({
+      timeout: 10_000,
+    });
+  }
+
+  return deletedProducts;
 };
 
 /**
@@ -1181,17 +1060,25 @@ test.describe.serial("商品削除", () => {
 
     await expect(getProductCard(page, comparisonProductName)).toBeVisible();
 
-    await showDeletedProducts(page);
+    const deletedProducts = await showDeletedProducts(page);
 
-    const deletedProductCard =
-      await findProductCardAcrossPages(
-        page,
-        targetProductName,
-      );
+    const targetProductIndex = deletedProducts.findIndex(
+      (product) => product.productUuid === targetProductUuid,
+    );
 
-    await expect(
-      deletedProductCard,
-    ).toBeVisible({
+    expect(
+      targetProductIndex,
+      `削除済み商品APIに「${targetProductName}」が含まれていません。`,
+    ).toBeGreaterThanOrEqual(0);
+
+    const targetProductPage =
+      Math.floor(targetProductIndex / PRODUCTS_PER_PAGE) + 1;
+
+    await goToProductPage(page, targetProductPage);
+
+    const deletedProductCard = getProductCard(page, targetProductName);
+
+    await expect(deletedProductCard).toBeVisible({
       timeout: 10_000,
     });
 
@@ -1239,17 +1126,29 @@ test.describe.serial("商品削除", () => {
     await page.reload();
 
     await selectTargetCategory(page);
-    await showDeletedProducts(page);
 
-    const reloadedDeletedProductCard =
-      await findProductCardAcrossPages(
-        page,
-        targetProductName,
-      );
+    const reloadedDeletedProducts = await showDeletedProducts(page);
 
-    await expect(
-      reloadedDeletedProductCard,
-    ).toBeVisible({
+    const reloadedTargetProductIndex = reloadedDeletedProducts.findIndex(
+      (product) => product.productUuid === targetProductUuid,
+    );
+
+    expect(
+      reloadedTargetProductIndex,
+      `再読み込み後の削除済み商品APIに「${targetProductName}」が含まれていません。`,
+    ).toBeGreaterThanOrEqual(0);
+
+    const reloadedTargetProductPage =
+      Math.floor(reloadedTargetProductIndex / PRODUCTS_PER_PAGE) + 1;
+
+    await goToProductPage(page, reloadedTargetProductPage);
+
+    const reloadedDeletedProductCard = getProductCard(
+      page,
+      targetProductName,
+    );
+
+    await expect(reloadedDeletedProductCard).toBeVisible({
       timeout: 10_000,
     });
 
