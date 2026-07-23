@@ -103,6 +103,26 @@ const installProductApiMocks = async (
       return;
     }
 
+    /*
+ * 商品修正画面の初期表示で、
+ * ProductRepository.findById()から呼ばれる。
+ */
+    if (
+      request.method() === "GET" &&
+      url.pathname ===
+      `/proxy-api/product/edit/${PRODUCT_UUID}`
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType:
+          "application/json",
+        body: JSON.stringify(
+          product,
+        ),
+      });
+      return;
+    }
+
     if (
       request.method() === "PUT" &&
       url.pathname === `/proxy-api/product/edit/${PRODUCT_UUID}`
@@ -119,8 +139,8 @@ const installProductApiMocks = async (
           status === 200
             ? { updated: true }
             : {
-                message: "商品情報を更新できませんでした。",
-              },
+              message: "商品情報を更新できませんでした。",
+            },
         ),
       });
       return;
