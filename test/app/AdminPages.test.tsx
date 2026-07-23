@@ -25,11 +25,11 @@ import {
 const {
     mockCookies,
     mockRedirect,
-    mockUpdateProduct,
+    mockUpdateProductFlow,
 } = vi.hoisted(() => ({
     mockCookies: vi.fn(),
     mockRedirect: vi.fn(),
-    mockUpdateProduct: vi.fn(),
+    mockUpdateProductFlow: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -102,14 +102,14 @@ vi.mock("@/components/api/auth/AdminWelcome", () => ({
 }));
 
 vi.mock(
-    "@/components/product/edit/UpdateProduct",
+    "@/components/product/edit/UpdateProductFlow",
     () => ({
-        UpdateProduct: (
+        UpdateProductFlow: (
             props: {
                 productUuid: string;
             }
         ) => {
-            mockUpdateProduct(props);
+            mockUpdateProductFlow(props);
 
             return (
                 <div>
@@ -152,7 +152,7 @@ describe(
              */
             mockCookies.mockReset();
             mockRedirect.mockReset();
-            mockUpdateProduct.mockReset();
+            mockUpdateProductFlow.mockReset();
 
             mockRedirect
                 .mockImplementation(
@@ -309,7 +309,7 @@ describe(
                 render(page);
 
                 expect(
-                    mockUpdateProduct
+                    mockUpdateProductFlow
                 ).toHaveBeenCalledWith({
                     productUuid:
                         "product-uuid",

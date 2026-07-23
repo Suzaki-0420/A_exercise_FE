@@ -503,6 +503,23 @@ describe("商品修正コンポーネント", () => {
             hookState.handleLeaveComplete
         ).toHaveBeenNthCalledWith(2, "/admin/product");
     });
+
+    it("完了情報をモーダル用の内容だけで表示する", () => {
+        hookState.completedResult = completedResult;
+
+        const { container } = render(
+            <UpdateProductComplete variant="modal" />
+        );
+
+        expect(
+            screen.getByRole("heading", {
+                name: "商品変更（完了）",
+            })
+        ).toBeTruthy();
+        expect(
+            container.querySelector("main")
+        ).toBeNull();
+    });
 });
 
 describe("UpdateProductContext", () => {

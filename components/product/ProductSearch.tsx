@@ -19,8 +19,7 @@ import { useSearchProductByKeyword } from "@/components/hooks/useSearchProductBy
 import { useSearchProductByCategory } from "@/components/hooks/useSearchProductByCategory";
 import { useProductCategories } from "@/components/hooks/useProductCategories";
 import { useDeleteProduct } from "@/components/hooks/useDeleteProduct";
-import { UpdateProductModal } from "@/components/product/edit/UpdateProductModal";
-import type { ProductUpdateResult } from "@/models/ProductUpdate";
+import { saveProductForUpdate } from "@/components/product/edit/productUpdateStorage";
 
 /**
  * 現在画面に表示する検索結果の種類
@@ -64,12 +63,6 @@ export const ProductSearch = () => {
      */
     const [displayMode, setDisplayMode] =
         useState<DisplayMode>("category");
-
-    const [updateTarget, setUpdateTarget] =
-        useState<Product | null>(null);
-
-    const [updatedProductName, setUpdatedProductName] =
-        useState<string | null>(null);
 
     const {
         deleteTarget,
@@ -194,25 +187,6 @@ export const ProductSearch = () => {
         );
     }, [searchByCategory]);
 
-    /**
-     * 商品修正完了通知を3秒後に閉じる
-     */
-    useEffect(() => {
-        if (!updatedProductName) {
-            return;
-        }
-
-        const timerId = window.setTimeout(
-            () => {
-                setUpdatedProductName(null);
-            },
-            3000
-        );
-
-        return () => {
-            window.clearTimeout(timerId);
-        };
-    }, [updatedProductName]);
     /**
  * 検索方法タブ切り替え
  */
@@ -366,47 +340,17 @@ export const ProductSearch = () => {
             categoryUuid === "all"
         );
 
-    const openUpdateModal = (
+    /**
+     * 選択した商品を引き継いで商品変更（入力）画面へ移動する
+     */
+    const handleUpdate = (
         product: Product
     ) => {
-        setUpdatedProductName(null);
-        setUpdateTarget(product);
-    };
+        saveProductForUpdate(product);
 
-    const closeUpdateModal = () => {
-        setUpdateTarget(null);
-    };
-
-    /**
-     * 商品修正成功後に現在の検索条件で一覧を再取得する
-     */
-    const handleUpdateCompleted = async (
-        result: ProductUpdateResult
-    ): Promise<void> => {
-        if (displayMode === "keyword") {
-            const trimmedKeyword =
-                keyword.trim();
-
-            if (trimmedKeyword !== "") {
-                await searchByKeyword(
-                    trimmedKeyword,
-                    showDeletedOnly
-                );
-            }
-        } else {
-            const categoryUuidForSearch =
-                categoryUuid === "all"
-                    ? ""
-                    : categoryUuid;
-
-            await searchByCategory(
-                categoryUuidForSearch,
-                showDeletedOnly
-            );
-        }
-
-        setUpdateTarget(null);
-        setUpdatedProductName(result.name);
+        router.push(
+            `/admin/product/edit/${product.productUuid}`
+        );
     };
 
     return (
@@ -614,7 +558,7 @@ export const ProductSearch = () => {
                         <ProductCardList
                             products={paginatedProducts}
                             onDelete={openDeleteModal}
-                            onUpdate={openUpdateModal}
+                            onUpdate={handleUpdate}
                         />
 
                         {/* ページ切り替え */}
@@ -706,50 +650,6 @@ export const ProductSearch = () => {
                         )}
                     </>
                 )}
-
-            {updateTarget && (
-                <UpdateProductModal
-                    key={
-                        updateTarget.productUuid
-                    }
-                    product={updateTarget}
-                    onClose={closeUpdateModal}
-                    onUpdated={
-                        handleUpdateCompleted
-                    }
-                />
-            )}
-
-            {updatedProductName && (
-                <div
-                    role="status"
-                    aria-live="polite"
-                    className="fixed right-4 top-4 z-50 flex max-w-sm items-center gap-3 rounded-lg border border-green-200 bg-white px-5 py-4 text-green-700 shadow-lg sm:right-6 sm:top-6"
-                >
-                    <span
-                        aria-hidden="true"
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white"
-                    >
-                        ✓
-                    </span>
-
-                    <p className="font-semibold">
-                        {updatedProductName}
-                        の商品情報を修正しました。
-                    </p>
-
-                    <button
-                        type="button"
-                        aria-label="通知を閉じる"
-                        onClick={() => {
-                            setUpdatedProductName(null);
-                        }}
-                        className="ml-auto text-xl leading-none text-gray-500 hover:text-gray-800"
-                    >
-                        ×
-                    </button>
-                </div>
-            )}
 
             {/* 商品削除確認モーダル */}
             {isDeleteModalOpen &&

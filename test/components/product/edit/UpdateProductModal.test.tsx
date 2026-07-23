@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 
-import { UpdateProductModal } from
-    "@/components/product/edit/UpdateProductModal";
+import { UpdateProductFlow } from
+    "@/components/product/edit/UpdateProductFlow";
 import type { UseUpdateProductOptions } from
     "@/components/hooks/useUpdateProduct";
-import type { Product } from "@/models/Product";
 import type { ProductUpdateResult } from
     "@/models/ProductUpdate";
 import {
@@ -13,7 +12,6 @@ import {
     render,
     screen,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
 import {
     afterEach,
     describe,
@@ -35,26 +33,20 @@ const updateResult: ProductUpdateResult = {
 };
 
 vi.mock(
-    "@/components/product/edit/UpdateProductContext",
-    () => ({
-        UpdateProductProvider: ({
-            children,
-        }: {
-            children: ReactNode;
-        }) => children,
-    })
-);
-
-vi.mock(
     "@/components/product/edit/UpdateProduct",
     () => ({
         UpdateProduct: ({
+            productUuid,
             options,
         }: {
+            productUuid: string;
             options?: UseUpdateProductOptions;
         }) => (
-            <div>
-                <p>商品修正入力フォーム</p>
+            <main>
+                <p>
+                    商品修正入力フォーム：
+                    {productUuid}
+                </p>
                 <button
                     type="button"
                     onClick={
@@ -63,13 +55,7 @@ vi.mock(
                 >
                     確認へ
                 </button>
-                <button
-                    type="button"
-                    onClick={options?.onCancel}
-                >
-                    入力をキャンセル
-                </button>
-            </div>
+            </main>
         ),
     })
 );
@@ -86,15 +72,11 @@ vi.mock(
                 <p>商品修正確認内容</p>
                 <button
                     type="button"
-                    onClick={options?.onBackToInput}
+                    onClick={
+                        options?.onBackToInput
+                    }
                 >
                     入力へ戻る
-                </button>
-                <button
-                    type="button"
-                    onClick={options?.onCancel}
-                >
-                    確認をキャンセル
                 </button>
                 <button
                     type="button"
@@ -131,48 +113,42 @@ vi.mock(
     })
 );
 
-const product: Product = {
-    productUuid: updateResult.productUuid,
-    name: updateResult.name,
-    price: updateResult.price,
-    imageUrl: null,
-    productCategory: {
-        categoryUuid:
-            updateResult.categoryUuid,
-        name: "文房具",
-    },
-    productStock: {
-        stockUuid:
-            "20000000-0000-0000-0000-000000000001",
-        quantity:
-            updateResult.stockQuantity,
-    },
-    deleteFlg: 0,
-};
+vi.mock(
+    "@/components/product/edit/UpdateProductComplete",
+    () => ({
+        UpdateProductComplete: ({
+            variant,
+        }: {
+            variant?: "page" | "modal";
+        }) => (
+            <p>
+                商品修正完了：{variant}
+            </p>
+        ),
+    })
+);
 
-describe("UpdateProductModal", () => {
+describe("商品修正のページ・モーダル遷移", () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
     });
 
-    it("入力と確認をモーダル内で行き来できる", () => {
+    it("入力はページに表示し、確認操作後にモーダルを開く", () => {
         render(
-            <UpdateProductModal
-                product={product}
-                onClose={vi.fn()}
-                onUpdated={vi.fn()}
+            <UpdateProductFlow
+                productUuid={updateResult.productUuid}
             />
         );
 
         expect(
-            screen.getByRole("dialog")
-        ).toBeTruthy();
-        expect(
             screen.getByText(
-                "商品修正入力フォーム"
+                `商品修正入力フォーム：${updateResult.productUuid}`
             )
         ).toBeTruthy();
+        expect(
+            screen.queryByRole("dialog")
+        ).toBeNull();
 
         fireEvent.click(
             screen.getByRole("button", {
@@ -181,11 +157,25 @@ describe("UpdateProductModal", () => {
         );
 
         expect(
-            screen.getByText(
-                "商品修正確認内容"
-            )
+            screen.getByRole("dialog")
         ).toBeTruthy();
+        expect(
+            screen.getByText("商品修正確認内容")
+        ).toBeTruthy();
+    });
 
+    it("確認モーダルから入力ページへ戻れる", () => {
+        render(
+            <UpdateProductFlow
+                productUuid={updateResult.productUuid}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: "確認へ",
+            })
+        );
         fireEvent.click(
             screen.getByRole("button", {
                 name: "入力へ戻る",
@@ -193,58 +183,48 @@ describe("UpdateProductModal", () => {
         );
 
         expect(
+            screen.queryByRole("dialog")
+        ).toBeNull();
+        expect(
             screen.getByText(
-                "商品修正入力フォーム"
+                `商品修正入力フォーム：${updateResult.productUuid}`
             )
         ).toBeTruthy();
     });
 
-    it("キャンセル操作を親へ通知する", () => {
-        const onClose = vi.fn();
-
+    it("更新成功後は完了内容をモーダルに表示する", () => {
         render(
-            <UpdateProductModal
-                product={product}
-                onClose={onClose}
-                onUpdated={vi.fn()}
+            <UpdateProductFlow
+                productUuid={updateResult.productUuid}
             />
         );
 
         fireEvent.click(
             screen.getByRole("button", {
-                name: "入力をキャンセル",
+                name: "確認へ",
+            })
+        );
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: "更新を確定",
             })
         );
 
-        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(
+            screen.getByRole("dialog")
+        ).toBeTruthy();
+        expect(
+            screen.getByText("商品修正完了：modal")
+        ).toBeTruthy();
+        expect(
+            screen.queryByText("商品修正確認内容")
+        ).toBeNull();
     });
 
-    it("更新処理中でなければEscapeキーで閉じられる", () => {
-        const onClose = vi.fn();
-
+    it("更新処理中はEscapeキーで確認モーダルを閉じない", () => {
         render(
-            <UpdateProductModal
-                product={product}
-                onClose={onClose}
-                onUpdated={vi.fn()}
-            />
-        );
-
-        fireEvent.keyDown(document, {
-            key: "Escape",
-        });
-
-        expect(onClose).toHaveBeenCalledTimes(1);
-    });
-
-    it("商品更新APIの実行中はEscapeキーで閉じない", () => {
-        const onClose = vi.fn();
-
-        render(
-            <UpdateProductModal
-                product={product}
-                onClose={onClose}
-                onUpdated={vi.fn()}
+            <UpdateProductFlow
+                productUuid={updateResult.productUuid}
             />
         );
 
@@ -262,7 +242,9 @@ describe("UpdateProductModal", () => {
             key: "Escape",
         });
 
-        expect(onClose).not.toHaveBeenCalled();
+        expect(
+            screen.getByRole("dialog")
+        ).toBeTruthy();
 
         fireEvent.click(
             screen.getByRole("button", {
@@ -273,17 +255,15 @@ describe("UpdateProductModal", () => {
             key: "Escape",
         });
 
-        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(
+            screen.queryByRole("dialog")
+        ).toBeNull();
     });
 
-    it("更新成功を親へ通知する", () => {
-        const onUpdated = vi.fn();
-
+    it("完了モーダルはEscapeキーで閉じない", () => {
         render(
-            <UpdateProductModal
-                product={product}
-                onClose={vi.fn()}
-                onUpdated={onUpdated}
+            <UpdateProductFlow
+                productUuid={updateResult.productUuid}
             />
         );
 
@@ -297,9 +277,15 @@ describe("UpdateProductModal", () => {
                 name: "更新を確定",
             })
         );
+        fireEvent.keyDown(document, {
+            key: "Escape",
+        });
 
-        expect(onUpdated).toHaveBeenCalledWith(
-            updateResult
-        );
+        expect(
+            screen.getByRole("dialog")
+        ).toBeTruthy();
+        expect(
+            screen.getByText("商品修正完了：modal")
+        ).toBeTruthy();
     });
 });

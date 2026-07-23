@@ -1,66 +1,51 @@
 "use client";
 
-import { UpdateProduct } from
-    "@/components/product/edit/UpdateProduct";
+import { UpdateProductComplete } from
+    "@/components/product/edit/UpdateProductComplete";
 import { UpdateProductConfirm } from
     "@/components/product/edit/UpdateProductConfirm";
-import { UpdateProductProvider } from
-    "@/components/product/edit/UpdateProductContext";
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogTitle,
 } from "@/components/ui/dialog";
-import type { Product } from "@/models/Product";
-import type { ProductUpdateResult } from
-    "@/models/ProductUpdate";
-import {
-    useCallback,
-    useState,
-} from "react";
+import { useCallback, useState } from "react";
+
+export type UpdateModalStep =
+    | "closed"
+    | "confirm"
+    | "complete";
 
 type UpdateProductModalProps = {
-    product: Product;
-    onClose: () => void;
-    onUpdated: (
-        result: ProductUpdateResult
-    ) => void | Promise<void>;
+    step: UpdateModalStep;
+    onBackToInput: () => void;
+    onUpdateCompleted: () => void;
 };
 
-type UpdateStep = "input" | "confirm";
-
 /**
- * 商品検索画面上で商品修正を完結させるモーダル
+ * 商品変更（入力）画面上に確認・完了を表示するモーダル
  */
-const UpdateProductModalContent = ({
-    product,
-    onClose,
-    onUpdated,
+export const UpdateProductModal = ({
+    step,
+    onBackToInput,
+    onUpdateCompleted,
 }: UpdateProductModalProps) => {
-    const [step, setStep] =
-        useState<UpdateStep>("input");
     const [isUpdatePending, setIsUpdatePending] =
         useState(false);
-
-    const proceedToConfirm =
-        useCallback(() => {
-            setStep("confirm");
-        }, []);
-
-    const backToInput = useCallback(() => {
-        setStep("input");
-    }, []);
+    const isOpen = step !== "closed";
+    const canReturnToInput =
+        step === "confirm" && !isUpdatePending;
 
     const requestClose = useCallback(() => {
-        if (!isUpdatePending) {
-            onClose();
+        if (canReturnToInput) {
+            onBackToInput();
         }
-    }, [isUpdatePending, onClose]);
+    }, [canReturnToInput, onBackToInput]);
 
     return (
         <Dialog
-            open
+            open={isOpen}
             onOpenChange={(open) => {
                 if (!open) {
                     requestClose();
@@ -71,68 +56,46 @@ const UpdateProductModalContent = ({
                 showCloseButton={false}
                 className="max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] min-w-0 max-w-3xl scroll-pb-6 overflow-x-hidden overflow-y-auto bg-transparent p-0 pb-6 ring-0"
                 onEscapeKeyDown={(event) => {
-                    if (isUpdatePending) {
+                    if (!canReturnToInput) {
                         event.preventDefault();
                     }
                 }}
                 onPointerDownOutside={(event) => {
-                    if (isUpdatePending) {
+                    if (!canReturnToInput) {
                         event.preventDefault();
                     }
                 }}
             >
                 <DialogTitle className="sr-only">
-                    {step === "input"
-                        ? "商品変更（入力）"
+                    {step === "complete"
+                        ? "商品変更（完了）"
                         : "商品変更（確認）"}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
-                    商品情報を変更し、内容を確認して更新します。
+                    {step === "complete"
+                        ? "商品情報の変更が完了しました。"
+                        : "変更する商品情報を確認します。"}
                 </DialogDescription>
 
-                {step === "input" ? (
-                    <UpdateProduct
-                        productUuid={
-                            product.productUuid
-                        }
-                        variant="modal"
-                        options={{
-                            initialProduct: product,
-                            onProceedToConfirm:
-                                proceedToConfirm,
-                            onCancel: onClose,
-                        }}
-                    />
-                ) : (
+                {step === "confirm" && (
                     <UpdateProductConfirm
                         variant="modal"
                         options={{
-                            onBackToInput:
-                                backToInput,
-                            onCancel: onClose,
+                            onBackToInput,
                             onUpdateSuccess:
-                                onUpdated,
+                                onUpdateCompleted,
                             onUpdatePendingChange:
                                 setIsUpdatePending,
                         }}
                     />
                 )}
+
+                {step === "complete" && (
+                    <UpdateProductComplete
+                        variant="modal"
+                    />
+                )}
             </DialogContent>
         </Dialog>
-    );
-};
-
-/**
- * 商品修正フロー専用の状態を提供するモーダル
- */
-export const UpdateProductModal = (
-    props: UpdateProductModalProps
-) => {
-    return (
-        <UpdateProductProvider>
-            <UpdateProductModalContent
-                {...props}
-            />
-        </UpdateProductProvider>
     );
 };

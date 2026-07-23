@@ -3,14 +3,11 @@
 import { ProductSearch } from
     "@/components/product/ProductSearch";
 import type { Product } from "@/models/Product";
-import type { ProductUpdateResult } from
-    "@/models/ProductUpdate";
 import {
     cleanup,
     fireEvent,
     render,
     screen,
-    waitFor,
 } from "@testing-library/react";
 import {
     afterEach,
@@ -25,10 +22,12 @@ const {
     mockSearchByCategory,
     mockSearchByKeyword,
     mockRouterPush,
+    mockSaveProductForUpdate,
 } = vi.hoisted(() => ({
     mockSearchByCategory: vi.fn(),
     mockSearchByKeyword: vi.fn(),
     mockRouterPush: vi.fn(),
+    mockSaveProductForUpdate: vi.fn(),
 }));
 
 const product: Product = {
@@ -50,23 +49,19 @@ const product: Product = {
     deleteFlg: 0,
 };
 
-const updateResult: ProductUpdateResult = {
-    productUuid: product.productUuid,
-    name: product.name,
-    price: product.price,
-    stockQuantity:
-        product.productStock!.quantity,
-    categoryUuid:
-        product.productCategory!.categoryUuid,
-    imageUrl: null,
-    updated: true,
-};
-
 vi.mock("next/navigation", () => ({
     useRouter: () => ({
         push: mockRouterPush,
     }),
 }));
+
+vi.mock(
+    "@/components/product/edit/productUpdateStorage",
+    () => ({
+        saveProductForUpdate:
+            mockSaveProductForUpdate,
+    })
+);
 
 vi.mock(
     "@/components/hooks/useSearchProductByCategory",
@@ -161,41 +156,7 @@ vi.mock(
     })
 );
 
-vi.mock(
-    "@/components/product/edit/UpdateProductModal",
-    () => ({
-        UpdateProductModal: ({
-            onClose,
-            onUpdated,
-        }: {
-            onClose: () => void;
-            onUpdated: (
-                result: ProductUpdateResult
-            ) => void | Promise<void>;
-        }) => (
-            <div role="dialog">
-                <button
-                    type="button"
-                    onClick={onClose}
-                >
-                    モーダルを閉じる
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        void onUpdated(
-                            updateResult
-                        );
-                    }}
-                >
-                    更新成功
-                </button>
-            </div>
-        ),
-    })
-);
-
-describe("ProductSearchの商品更新モーダル", () => {
+describe("ProductSearchの商品修正遷移", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockSearchByCategory.mockResolvedValue(
@@ -224,7 +185,7 @@ describe("ProductSearchの商品更新モーダル", () => {
         ).toBe(true);
     });
 
-    it("更新ボタンでモーダルを開きキャンセルで閉じる", () => {
+    it("更新ボタンで商品を保存して入力画面へ遷移する", () => {
         render(<ProductSearch />);
 
         fireEvent.click(
@@ -234,57 +195,10 @@ describe("ProductSearchの商品更新モーダル", () => {
         );
 
         expect(
-            screen.getByRole("dialog")
-        ).toBeTruthy();
-        expect(mockRouterPush).not.toHaveBeenCalledWith(
+            mockSaveProductForUpdate
+        ).toHaveBeenCalledWith(product);
+        expect(mockRouterPush).toHaveBeenCalledWith(
             `/admin/product/edit/${product.productUuid}`
         );
-
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: "モーダルを閉じる",
-            })
-        );
-
-        expect(
-            screen.queryByRole("dialog")
-        ).toBeNull();
-    });
-
-    it("更新成功後に一覧を再取得して完了通知を表示する", async () => {
-        render(<ProductSearch />);
-
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: "商品を更新",
-            })
-        );
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: "更新成功",
-            })
-        );
-
-        await waitFor(() => {
-            expect(
-                mockSearchByCategory
-            ).toHaveBeenCalledTimes(2);
-        });
-
-        expect(
-            mockSearchByCategory
-        ).toHaveBeenLastCalledWith(
-            "",
-            false
-        );
-        expect(
-            screen.getByRole("status")
-                .textContent
-        ).toContain(
-            "水性ボールペン黒の商品情報を修正しました。"
-        );
-        expect(
-            screen.queryByRole("dialog")
-        ).toBeNull();
     });
 });

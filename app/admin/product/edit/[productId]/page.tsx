@@ -1,4 +1,4 @@
-import { UpdateProduct } from "@/components/product/edit/UpdateProduct";
+import { UpdateProductFlow } from "@/components/product/edit/UpdateProductFlow";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,5 +15,5 @@ export default async function UpdateProductPage({
 }) {
     const { productId } = await params;
 
-    return <UpdateProduct productUuid={productId} />;
+    return <UpdateProductFlow productUuid={productId} />;
 }
