@@ -59,6 +59,16 @@ jobs:
       - name: Playwrightのブラウザをインストール
         run: npx playwright install --with-deps chromium
 
+      - name: バックエンド接続確認
+        run: |
+          echo "API_BASE_URL=${API_BASE_URL}"
+
+          curl \
+            --verbose \
+            --connect-timeout 10 \
+            --max-time 20 \
+            "${API_BASE_URL}/swagger/index.html"
+
       - name: E2Eテスト
         run: npm run test:e2e
         env:
