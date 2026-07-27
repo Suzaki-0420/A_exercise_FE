@@ -42,7 +42,7 @@ export const AdminLoginForm = ({
         </p>
       </div>
 
-      {showSessionTimeoutMessage && (
+      {showSessionTimeoutMessage && !submitError && (
         <Alert variant="destructive" className="mb-6">
           <CircleAlertIcon />
           <AlertTitle>再ログインが必要です</AlertTitle>

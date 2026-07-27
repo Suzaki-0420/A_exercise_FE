@@ -118,6 +118,21 @@ describe("担当者認証コンポーネント", () => {
     ).toBeTruthy();
   });
 
+  it("セッション切れ後のログイン失敗では新しいエラーだけを表示する", () => {
+    loginHookState.submitError =
+      "アカウント名またはパスワードが正しくありません。";
+
+    render(<AdminLoginForm showSessionTimeoutMessage />);
+
+    expect(screen.getByText("ログインできませんでした")).toBeTruthy();
+    expect(
+      screen.getByText("アカウント名またはパスワードが正しくありません。"),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("セッションが切れました。再度ログインしてください"),
+    ).toBeNull();
+  });
+
   it("ログアウトボタンの操作とエラーを表示する", () => {
     logoutHookState.submitError = "ログアウトエラー";
 
