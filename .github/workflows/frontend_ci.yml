@@ -51,7 +51,6 @@ jobs:
       - name: ビルド
         run: npm run build
         env:
-          API_BASE_URL: http://${{ secrets.VM_HOST }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
 
       - name: Playwrightのブラウザをインストール
@@ -61,7 +60,6 @@ jobs:
         run: npm run test:e2e
         env:
           CI: true
-          API_BASE_URL: http://${{ secrets.VM_HOST }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           AUTH_TRUST_HOST: true
 
