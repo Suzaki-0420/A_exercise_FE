@@ -68,6 +68,17 @@ jobs:
             --connect-timeout 10 \
             --max-time 20 \
             "${API_BASE_URL}/swagger/index.html"
+      
+      - name: ログインAPI接続確認
+        run: |
+          curl \
+          --verbose \
+          --connect-timeout 10 \
+          --max-time 20 \
+          --request POST \
+          --header "Content-Type: application/json" \
+          --data '{"accountName":"Yamada","password":"passYamada"}' \
+          "${API_BASE_URL}/api/admin/auth/login"
 
       - name: E2Eテスト
         run: npm run test:e2e
