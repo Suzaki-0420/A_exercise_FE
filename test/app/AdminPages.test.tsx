@@ -11,7 +11,13 @@ import { cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockCookies, mockRedirect, mockUpdateProductFlow } = vi.hoisted(() => ({
+const {
+  mockAdminLoginForm,
+  mockCookies,
+  mockRedirect,
+  mockUpdateProductFlow,
+} = vi.hoisted(() => ({
+  mockAdminLoginForm: vi.fn(),
   mockCookies: vi.fn(),
   mockRedirect: vi.fn(),
   mockUpdateProductFlow: vi.fn(),
@@ -48,7 +54,11 @@ vi.mock("@/components/common/AdminHeader", () => ({
 }));
 
 vi.mock("@/components/api/auth/login/AdminLoginForm", () => ({
-  AdminLoginForm: () => <div>ログインフォーム</div>,
+  AdminLoginForm: (props: { showSessionTimeoutMessage?: boolean }) => {
+    mockAdminLoginForm(props);
+
+    return <div>ログインフォーム</div>;
+  },
 }));
 
 vi.mock("@/components/api/auth/AdminWelcome", () => ({
@@ -79,6 +89,7 @@ describe("管理画面ページ", () => {
      */
     mockCookies.mockReset();
     mockRedirect.mockReset();
+    mockAdminLoginForm.mockReset();
     mockUpdateProductFlow.mockReset();
 
     mockRedirect.mockImplementation(() => {
@@ -97,7 +108,9 @@ describe("管理画面ページ", () => {
 
     await expect(AdminMenuPage()).rejects.toThrow("NEXT_REDIRECT");
 
-    expect(mockRedirect).toHaveBeenCalledWith("/admin/login");
+    expect(mockRedirect).toHaveBeenCalledWith(
+      "/admin/login?reason=session-timeout",
+    );
   });
 
   it("空の認証Cookieでもログイン画面へ遷移する", async () => {
@@ -132,10 +145,31 @@ describe("管理画面ページ", () => {
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it("ログインページを表示する", () => {
-    render(<AdminLoginPage />);
+  it("ログインページを表示する", async () => {
+    const page = await AdminLoginPage({
+      searchParams: Promise.resolve({}),
+    });
+
+    render(page);
 
     expect(screen.getByText("ログインフォーム")).toBeTruthy();
+    expect(mockAdminLoginForm).toHaveBeenCalledWith({
+      showSessionTimeoutMessage: false,
+    });
+  });
+
+  it("セッション切れの場合はログインフォームへ通知する", async () => {
+    const page = await AdminLoginPage({
+      searchParams: Promise.resolve({
+        reason: "session-timeout",
+      }),
+    });
+
+    render(page);
+
+    expect(mockAdminLoginForm).toHaveBeenCalledWith({
+      showSessionTimeoutMessage: true,
+    });
   });
 
   it("管理画面レイアウトにヘッダーと子要素を表示する", () => {

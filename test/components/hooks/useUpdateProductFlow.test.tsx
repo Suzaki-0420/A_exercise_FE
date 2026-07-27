@@ -248,7 +248,9 @@ describe("useUpdateProductの商品修正フロー", () => {
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith("/admin/login");
+    expect(mockRouter.replace).toHaveBeenCalledWith(
+      "/admin/login?reason=session-timeout",
+    );
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
 
@@ -684,7 +686,9 @@ describe("useUpdateProductの商品修正フロー", () => {
       await result.current.handleUpdate();
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith("/admin/login");
+    expect(mockRouter.replace).toHaveBeenCalledWith(
+      "/admin/login?reason=session-timeout",
+    );
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
 

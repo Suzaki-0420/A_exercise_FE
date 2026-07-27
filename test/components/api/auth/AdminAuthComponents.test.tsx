@@ -110,6 +110,14 @@ describe("担当者認証コンポーネント", () => {
     ).toBe(true);
   });
 
+  it("セッション切れのメッセージを表示する", () => {
+    render(<AdminLoginForm showSessionTimeoutMessage />);
+
+    expect(
+      screen.getByText("セッションが切れました。再度ログインしてください"),
+    ).toBeTruthy();
+  });
+
   it("ログアウトボタンの操作とエラーを表示する", () => {
     logoutHookState.submitError = "ログアウトエラー";
 

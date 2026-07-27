@@ -6,12 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { ADMIN_SESSION_TIMEOUT_MESSAGE } from "@/lib/admin-auth";
 import { CircleAlertIcon, LogInIcon } from "lucide-react";
+
+type AdminLoginFormProps = {
+  showSessionTimeoutMessage?: boolean;
+};
 
 /**
  * 担当者ログインフォーム
  */
-export const AdminLoginForm = () => {
+export const AdminLoginForm = ({
+  showSessionTimeoutMessage = false,
+}: AdminLoginFormProps) => {
   const {
     credentials,
     fieldErrors,
@@ -34,6 +41,14 @@ export const AdminLoginForm = () => {
           アカウント名とパスワードを入力してください。
         </p>
       </div>
+
+      {showSessionTimeoutMessage && (
+        <Alert variant="destructive" className="mb-6">
+          <CircleAlertIcon />
+          <AlertTitle>再ログインが必要です</AlertTitle>
+          <AlertDescription>{ADMIN_SESSION_TIMEOUT_MESSAGE}</AlertDescription>
+        </Alert>
+      )}
 
       {submitError && (
         <Alert variant="destructive" className="mb-6">

@@ -1,5 +1,6 @@
 import { AdminWelcome } from "@/components/api/auth/AdminWelcome";
 import { Button } from "@/components/ui/button";
+import { ADMIN_SESSION_TIMEOUT_LOGIN_PATH } from "@/lib/admin-auth";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -11,7 +12,7 @@ export default async function AdminMenuPage() {
   const cookieStore = await cookies();
 
   if (!cookieStore.get("FullnessAdminAuth")?.value) {
-    redirect("/admin/login");
+    redirect(ADMIN_SESSION_TIMEOUT_LOGIN_PATH);
   }
 
   return (
