@@ -75,7 +75,8 @@ jobs:
           --request POST \
           --header "Content-Type: application/json" \
           --data '{"accountName":"Yamada","password":"passYamada"}' \
-          "${API_BASE_URL}/api/admin/auth/login"
+          --write-out "\nHTTP_STATUS=%{http_code}\n" \
+          "https://fullness-stationery.japaneast.cloudapp.azure.com/proxy-api/auth/login"
 
       - name: E2Eテスト
         run: npm run test:e2e
