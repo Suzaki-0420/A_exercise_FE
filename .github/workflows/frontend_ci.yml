@@ -28,6 +28,9 @@ jobs:
     name: ビルドとテスト
     runs-on: ubuntu-latest
 
+    env:
+      API_BASE_URL: http://74.176.217.130
+
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
