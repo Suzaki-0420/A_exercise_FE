@@ -13,6 +13,10 @@ setup("ログインして認証状態を保存する", async ({ page }) => {
     recursive: true,
   });
 
+  page.on("response", async response => {
+    console.log(response.status(), response.url());
+  });
+
   await page.goto("/admin/login");
 
   await page.getByLabel("アカウント名").fill("Yamada");

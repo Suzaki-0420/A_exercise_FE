@@ -4,6 +4,7 @@ import { clearLoggedInAdmin } from "@/components/api/auth/adminSessionStorage";
 import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
 import type { ILogoutAdminService } from "@/interfaces/ILogoutAdminService";
+import { ADMIN_SESSION_TIMEOUT_LOGIN_PATH } from "@/lib/admin-auth";
 import { AdminLogoutError } from "@/models/AdminAuth";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -34,7 +35,7 @@ export const useAdminLogout = () => {
       if (error instanceof AdminLogoutError) {
         if (error.status === 401) {
           clearLoggedInAdmin();
-          router.replace("/admin/login");
+          router.replace(ADMIN_SESSION_TIMEOUT_LOGIN_PATH);
           router.refresh();
           return;
         }

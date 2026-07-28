@@ -1,7 +1,10 @@
+import {
+  ADMIN_LOGIN_PATH,
+  ADMIN_SESSION_TIMEOUT_LOGIN_PATH,
+} from "@/lib/admin-auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const ADMIN_LOGIN_PATH = "/admin/login";
 const ADMIN_AUTH_COOKIE_NAME = "FullnessAdminAuth";
 
 /**
@@ -18,7 +21,9 @@ export function proxy(request: NextRequest) {
   const authCookie = request.cookies.get(ADMIN_AUTH_COOKIE_NAME);
 
   if (!authCookie?.value) {
-    return NextResponse.redirect(new URL(ADMIN_LOGIN_PATH, request.url));
+    return NextResponse.redirect(
+      new URL(ADMIN_SESSION_TIMEOUT_LOGIN_PATH, request.url),
+    );
   }
 
   return NextResponse.next();

@@ -8,6 +8,7 @@ import {
 import { container } from "@/di/container";
 import { TYPES } from "@/di/types";
 import type { IUpdateProductService } from "@/interfaces/IUpdateProductService";
+import { ADMIN_SESSION_TIMEOUT_LOGIN_PATH } from "@/lib/admin-auth";
 import type { Product } from "@/models/Product";
 import type { ProductCategory } from "@/models/ProductCategory";
 import {
@@ -200,7 +201,7 @@ export const useUpdateProduct = (
         }
 
         if (error instanceof ProductUpdateError && error.status === 401) {
-          router.replace("/admin/login");
+          router.replace(ADMIN_SESSION_TIMEOUT_LOGIN_PATH);
           router.refresh();
           return;
         }
@@ -487,7 +488,7 @@ export const useUpdateProduct = (
 
       if (error instanceof ProductUpdateError) {
         if (error.status === 401) {
-          router.replace("/admin/login");
+          router.replace(ADMIN_SESSION_TIMEOUT_LOGIN_PATH);
           router.refresh();
           return;
         }

@@ -2,6 +2,7 @@
 
 import { useRegisterProduct } from "@/components/hooks/useRegisterProduct";
 import type { FormEvent } from "react";
+import { useRef } from "react";
 
 /**
  * 新商品登録（入力）コンポーネント
@@ -47,6 +48,48 @@ export const RegisterProduct = () => {
     await openConfirmModal();
   };
 
+  const imageInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const modalImageInputRef =
+    useRef<HTMLInputElement>(null);
+
+  /**
+ * 入力内容を初期状態へ戻す
+ */
+  const handleResetForm = () => {
+    resetForm();
+
+    /*
+     * type="file"の選択状態は、
+     * Reactのstateを初期化するだけでは消えないため、
+     * DOM側のvalueも明示的に空にする。
+     */
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+
+    if (modalImageInputRef.current) {
+      modalImageInputRef.current.value = "";
+    }
+  };
+
+  /**
+ * 商品を登録する
+ */
+  const handleConfirmRegisterProduct =
+    async () => {
+      await confirmRegisterProduct();
+
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+
+      if (modalImageInputRef.current) {
+        modalImageInputRef.current.value = "";
+      }
+    };
+
   return (
     <>
       <main className="flex min-h-screen justify-center bg-white px-6 py-12">
@@ -83,9 +126,8 @@ export const RegisterProduct = () => {
                   onChange={handleChange}
                   onBlur={handleNameBlur}
                   disabled={isLoading}
-                  className={`w-full rounded border px-3 py-2 ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full rounded border px-3 py-2 ${errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
 
                 {errors.name && (
@@ -109,9 +151,8 @@ export const RegisterProduct = () => {
                   onChange={handleChange}
                   onBlur={handlePriceBlur}
                   disabled={isLoading}
-                  className={`w-full rounded border px-3 py-2 ${
-                    errors.price ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full rounded border px-3 py-2 ${errors.price ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
 
                 {errors.price && (
@@ -139,11 +180,10 @@ export const RegisterProduct = () => {
                   onChange={handleStockChange}
                   onBlur={handleStockBlur}
                   disabled={isLoading}
-                  className={`w-full rounded border px-3 py-2 ${
-                    errors.stock || errors.quantity
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
+                  className={`w-full rounded border px-3 py-2 ${errors.stock || errors.quantity
+                    ? "border-red-500"
+                    : "border-gray-300"
+                    }`}
                 />
 
                 {(errors.stock || errors.quantity) && (
@@ -168,13 +208,12 @@ export const RegisterProduct = () => {
                   onChange={(event) => handleCategoryChange(event.target.value)}
                   onBlur={handleCategoryBlur}
                   disabled={isLoading || isCategoriesLoading}
-                  className={`w-full rounded border px-3 py-2 ${
-                    errors.categoryUuid ||
+                  className={`w-full rounded border px-3 py-2 ${errors.categoryUuid ||
                     errors.productCategory ||
                     errors.category
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
+                    ? "border-red-500"
+                    : "border-gray-300"
+                    }`}
                 >
                   <option value="">選択してください</option>
 
@@ -191,12 +230,12 @@ export const RegisterProduct = () => {
                 {(errors.categoryUuid ||
                   errors.productCategory ||
                   errors.category) && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.categoryUuid ??
-                      errors.productCategory ??
-                      errors.category}
-                  </p>
-                )}
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.categoryUuid ??
+                        errors.productCategory ??
+                        errors.category}
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -208,15 +247,15 @@ export const RegisterProduct = () => {
 
               <div>
                 <input
+                  ref={imageInputRef}
                   id="image"
                   name="image"
                   type="file"
                   accept="image/jpeg,image/png"
                   onChange={handleImageChange}
                   disabled={isLoading}
-                  className={`w-full rounded border px-3 py-2 ${
-                    errors.image ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full rounded border px-3 py-2 ${errors.image ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
 
                 {imageFile && (
@@ -244,7 +283,7 @@ export const RegisterProduct = () => {
             <div className="flex justify-center gap-6 pt-6">
               <button
                 type="button"
-                onClick={resetForm}
+                onClick={handleResetForm}
                 disabled={isLoading}
                 className="rounded border border-green-600 px-5 py-2 font-bold text-green-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -325,6 +364,7 @@ export const RegisterProduct = () => {
                   </label>
 
                   <input
+                    ref={modalImageInputRef}
                     id="productImage"
                     type="file"
                     accept="image/*"
@@ -371,7 +411,7 @@ export const RegisterProduct = () => {
 
               <button
                 type="button"
-                onClick={confirmRegisterProduct}
+                onClick={handleConfirmRegisterProduct}
                 disabled={isLoading}
                 className="rounded bg-green-600 px-5 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >

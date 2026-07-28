@@ -411,10 +411,16 @@ test.describe("UC018 担当者ログアウト", () => {
     await expectLoginPage(page);
 
     /*
-     * 401時はエラーを表示せず、
-     * ログイン画面へ遷移する実装。
+     * 401時はログイン画面へ遷移し、
+     * セッション切れを通知する。
      */
     await expect(getLogoutError(page)).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "セッションが切れました。再度ログインしてください",
+        { exact: true },
+      ),
+    ).toBeVisible();
   });
 
   test("ログアウトAPIへの接続に失敗した場合、通信エラーを表示する", async ({

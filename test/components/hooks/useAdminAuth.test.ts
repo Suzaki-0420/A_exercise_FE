@@ -278,7 +278,9 @@ describe("担当者認証Hook", () => {
     });
 
     expect(loadLoggedInAdmin()).toBeNull();
-    expect(mockReplace).toHaveBeenCalledWith("/admin/login");
+    expect(mockReplace).toHaveBeenCalledWith(
+      "/admin/login?reason=session-timeout",
+    );
     expect(result.current.submitError).toBeNull();
   });
 

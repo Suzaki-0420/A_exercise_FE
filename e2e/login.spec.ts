@@ -95,19 +95,23 @@ test.describe("ログイン", () => {
   });
 
   /**
-   * 未ログインの利用者が管理画面へ直接アクセスできないことを確認する。
-   * これは middleware.ts による保護の検証であり、
-   * 画面を経由しない直接のURLアクセスを再現できる E2E テストならではの項目。
+   * 認証Cookieが失効した状態で管理画面へアクセスした場合の
+   * セッションタイムアウト処理を確認する。
    */
-  test("未ログインで管理画面へアクセスするとログイン画面へリダイレクトされる", async ({
+  test("セッション切れで管理画面へアクセスするとログイン画面へリダイレクトされる", async ({
     page,
   }) => {
     // ログインを経ずに、いきなり商品検索画面のURLを開く
     await page.goto("/admin/product");
 
-    // ログイン画面へリダイレクトされることを確認する。
-    // NextAuth はリダイレクト時にクエリパラメータ（callbackUrl）を付けるため、
-    // 完全一致ではなく正規表現で判定する。
-    await expect(page).toHaveURL(/\/admin\/login/);
+    await expect(page).toHaveURL(
+      "/admin/login?reason=session-timeout",
+    );
+    await expect(
+      page.getByText(
+        "セッションが切れました。再度ログインしてください",
+        { exact: true },
+      ),
+    ).toBeVisible();
   });
 });

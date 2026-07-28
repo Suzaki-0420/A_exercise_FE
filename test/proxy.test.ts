@@ -28,7 +28,9 @@ describe("管理画面のアクセス制御", () => {
     const response = proxy(new NextRequest("http://localhost:3000/admin"));
 
     expect(response.status).toBe(307);
-    expect(getRedirectUrl(response)).toBe("http://localhost:3000/admin/login");
+    expect(getRedirectUrl(response)).toBe(
+      "http://localhost:3000/admin/login?reason=session-timeout",
+    );
   });
 
   it("空の認証Cookieでは管理画面へアクセスできない", () => {
@@ -40,7 +42,9 @@ describe("管理画面のアクセス制御", () => {
       }),
     );
 
-    expect(getRedirectUrl(response)).toBe("http://localhost:3000/admin/login");
+    expect(getRedirectUrl(response)).toBe(
+      "http://localhost:3000/admin/login?reason=session-timeout",
+    );
   });
 
   it("ログイン画面は認証Cookieなしで表示できる", () => {

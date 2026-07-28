@@ -141,9 +141,9 @@ const selectValidStatus = (result: HookResult, statusId = 5): void => {
  * 任意のタイミングで完了できるPromiseを生成する
  */
 const createDeferred = <T>() => {
-  let resolve: (value: T) => void = () => {};
+  let resolve: (value: T) => void = () => { };
 
-  let reject: (reason?: unknown) => void = () => {};
+  let reject: (reason?: unknown) => void = () => { };
 
   const promise = new Promise<T>((promiseResolve, promiseReject) => {
     resolve = promiseResolve;
@@ -637,7 +637,7 @@ describe("useUpdateOrderStatus", () => {
 
     await openConfirmModal(result, 5);
 
-    let resolveUpdate: (value: UpdateOrderStatusComplete) => void = () => {};
+    let resolveUpdate: (value: UpdateOrderStatusComplete) => void = () => { };
 
     mockUpdateStatus.mockImplementation(
       () =>

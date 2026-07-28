@@ -147,7 +147,7 @@ test.describe("担当者アカウント登録画面", () => {
      */
     await expect(
       employeeSelect.getByRole("option", {
-        name: "佐藤 花子",
+        name: "小林 愛",
         exact: true,
       }),
     ).toBeAttached();
