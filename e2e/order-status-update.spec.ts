@@ -51,7 +51,7 @@ const TARGET_ORDER = {
 
   orderDetails: [
     {
-      productName: "A4ノート 40枚",
+      productName: "A4ノート 30枚",
       quantity: 1,
     },
   ],
