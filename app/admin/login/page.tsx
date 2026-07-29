@@ -3,7 +3,7 @@ import { isAdminSessionTimeoutReason } from "@/lib/admin-auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "担当者ログイン | フルネス文具 管理画面",
+  title: "担当者ログイン",
 };
 
 /**

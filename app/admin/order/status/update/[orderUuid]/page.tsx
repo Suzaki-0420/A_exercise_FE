@@ -1,5 +1,9 @@
 import { UpdateOrderStatus } from "@/components/order/status/UpdateOrderStatus";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "注文履歴更新",
+};
 /**
  * 注文履歴更新ページのProps
  */
